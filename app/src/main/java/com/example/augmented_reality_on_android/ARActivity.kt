@@ -3,13 +3,14 @@ package com.example.augmented_reality_on_android
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.ViewGroup
-import org.opencv.core.Mat
-import java.util.Collections
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.rand
 import org.opencv.android.*
 import org.opencv.core.CvType
+import org.opencv.core.Mat
+import java.io.IOException
+import java.util.*
 
 
 class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
@@ -30,13 +31,20 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
                 doubleArrayOf(7.0, 8.0, 9.0)
             )
         )
-        val a = ARCore()
-        a.recoverRigidBodyMotionAndFocalLengths(H_c_b)
-        a.rigidBodyMotion(H_c_b, 1)
 
-        val x_u = mk.rand<Double>(8, 8)
-        val x_d = mk.rand<Double>(8, 2)
-        a.homographyFrom4PointCorrespondences(x_d, x_u)
+        var reference_image: Mat? = null
+        try {
+            reference_image = org.opencv.android.Utils.loadResource(this, R.drawable.book1_reference, CvType.CV_8UC4)
+            val a = ARCore(reference_image)
+            a.recoverRigidBodyMotionAndFocalLengths(H_c_b)
+            a.rigidBodyMotion(H_c_b, 1)
+
+            val x_u = mk.rand<Double>(8, 8)
+            val x_d = mk.rand<Double>(8, 2)
+            a.homographyFrom4PointCorrespondences(x_d, x_u)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
