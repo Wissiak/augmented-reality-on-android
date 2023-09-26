@@ -37,7 +37,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
             reference_image = org.opencv.android.Utils.loadResource(this, R.drawable.book1_reference, CvType.CV_8UC4)
             val a = ARCore(reference_image)
             a.recoverRigidBodyMotionAndFocalLengths(H_c_b)
-            a.rigidBodyMotion(H_c_b, 1)
+            a.rigidBodyMotion(H_c_b, 1.0)
 
             val x_u = mk.rand<Double>(8, 8)
             val x_d = mk.rand<Double>(8, 2)
