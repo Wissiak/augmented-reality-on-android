@@ -39,7 +39,7 @@ class Utils {
 
 class RecoveryFromHomography(
     public var R_c_b: D2Array<Double>,
-    public var t_c_b: MultiArray<Double, D1>,
+    public var t_c_cb: MultiArray<Double, D2>,
     public var fx: Double = -1.0,
     public var fy: Double = -1.0
 ) {
@@ -89,8 +89,8 @@ class ARCore {
         val rx = B[0..2, 0]
         val ry = B[0..2, 1]
         val rz = Utils.cross(rx, ry)
-        val R_c_b = rx.append(ry).append(rz).reshape(3, 3)
-        val t_c_cb = B[0..2, 2]
+        val R_c_b = rx.append(ry).append(rz).reshape(3, 3).transpose()
+        val t_c_cb = B[0..2, 2].reshape(3, 1)
         val fx = diags_sqrt[2, 2] / diags_sqrt[0, 0]
         val fy = diags_sqrt[2, 2] / diags_sqrt[1, 1]
 
@@ -143,21 +143,22 @@ class ARCore {
         x_u: D2Array<Double>
     ): RecoveryFromHomography? {
         val x_d_center = Size(shape.width / 2, shape.height / 2)
-        val ratios = mk.ndarray(doubleArrayOf())
-        val angles = mk.ndarray(doubleArrayOf())
-        val solutions = mk.zeros<RecoveryFromHomography>(0)
         val rotations = 3
-        val steps_per_rotation = 50
+        val steps_per_rotation = 50.0
         val delta_per_rotation = 6
-        for (iter in 0..rotations * steps_per_rotation) {
+        val length: Int = (rotations * steps_per_rotation).toInt()
+        val solutions = MutableList<RecoveryFromHomography?>(length) { null }
+        val ratios = MutableList<Double>(length) { 0.0 }
+        val angles = MutableList<Double>(length) { 0.0 }
+        for (iter in 0 until length) {
             val alpha = iter * 2 * Math.PI / steps_per_rotation
-            val dr = iter / steps_per_rotation * delta_per_rotation
+            val dr:Double = iter / steps_per_rotation * delta_per_rotation
             val dx = dr * cos(alpha)
             val dy = dr * sin(alpha)
             val x_ds = x_d.copy()
             x_ds[1] = x_ds[1] + mk.ndarray(doubleArrayOf(dx, dy)) //TODO check this
-            val x_ds_center: D2Array<Double> = mk.zeros(8, 2) //TODO: check this
-            for (i in 0..7) {
+            val x_ds_center: D2Array<Double> = mk.zeros(4, 2)
+            for (i in 0..3) {
                 x_ds_center[i] = mk.ndarray(
                     doubleArrayOf(
                         x_ds[i, 0] - x_d_center.width,
@@ -169,9 +170,9 @@ class ARCore {
             // Determine the pose and the focal lengths
             val res: RecoveryFromHomography = recoverRigidBodyMotionAndFocalLengths(cH_c_b)
             if (res.fx != -1.0) {
-                ratios.append(min(res.fx, res.fy) / max(res.fx, res.fy))
-                angles.append(alpha)
-                solutions.append(res)
+                ratios[iter] = min(res.fx, res.fy) / max(res.fx, res.fy)
+                angles[iter] = alpha
+                solutions[iter] = res
             }
         }
         if (ratios.size == 0) {
@@ -180,7 +181,7 @@ class ARCore {
         }
 
         // Identify the most plausible solution
-        val idx = mk.math.argMax(ratios)
+        val idx = ratios.indices.maxBy { ratios[it] }
         return solutions[idx]
     }
 /*
@@ -221,9 +222,9 @@ class ARCore {
         val ry = V[0..2, 1] / mk.linalg.norm(V[0..2, 1].reshape(3, 1))
         val rz = Utils.cross(rx, ry)
         val R_c_b = rx.append(ry).append(rz).reshape(3, 3).transpose()
-        val t_c_b = V[0..2, 2]
+        val t_c_cb = V[0..2, 2].reshape(3, 1)
 
-        return RecoveryFromHomography(R_c_b, t_c_b, f, f)
+        return RecoveryFromHomography(R_c_b, t_c_cb, f, f)
     }
 
     fun android_ar(video_frame: Mat) {

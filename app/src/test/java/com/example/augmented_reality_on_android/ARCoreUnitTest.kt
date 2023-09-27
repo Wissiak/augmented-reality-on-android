@@ -8,7 +8,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.opencv.core.CvType
 import org.opencv.core.Mat
+import org.opencv.core.Size
 import kotlin.math.sqrt
+import kotlin.test.assertNotNull
 
 class ARCoreUnitTest {
     private lateinit var arCore: ARCore
@@ -48,5 +50,95 @@ class ARCoreUnitTest {
         )
 
         assertEquals(expR_c_b, res.R_c_b)
+    }
+
+    @Test
+    fun test_recoverRigidBodyMotionAndFocalLengths() {
+        val cH_c_b = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(-0.43699279658975915, 1.0158929392626697, -69.26686096191406),
+                doubleArrayOf(1.1610037751270545, 0.3657492297298278, -226.89202880859375),
+                doubleArrayOf(-3.7031925044988056e-05, -0.000806291569845789, 1.0),
+            )
+        )
+        val res = arCore.recoverRigidBodyMotionAndFocalLengths(cH_c_b)
+
+        val expR_c_b = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(-0.35149255313798733, 0.8171274348751087, -0.45689795388353843),
+                doubleArrayOf(0.935914197685627, 0.2948396070971149, -0.1927024147676617),
+                doubleArrayOf(-0.022750816666840444, -0.49535074569565735, -0.8683950938828178),
+            )
+        )
+
+        val expt_c_cb = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(-55.71438705021373),
+                doubleArrayOf(-182.9033424808808),
+                doubleArrayOf(614.3568458620966),
+            )
+        )
+
+        val expfx = 763.7985891324039
+        val expfy = 762.1111198920303
+
+        assertEquals(expR_c_b, res.R_c_b)
+        assertEquals(expt_c_cb, res.t_c_cb)
+        assertEquals(expfx, res.fx)
+        assertEquals(expfy, res.fy)
+    }
+
+    @Test
+    fun test_findPoseTransformationParams() {
+        val x_d = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(200.23314, 252.60797),
+                doubleArrayOf(109.43447, 490.69876),
+                doubleArrayOf(440.8565, 630.7588),
+                doubleArrayOf(555.4785, 320.25253),
+            )
+        )
+
+        val x_u = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(0.0, 0.0),
+                doubleArrayOf(205.0, 0.0),
+                doubleArrayOf(205.0, 285.0),
+                doubleArrayOf(0.0, 285.0),
+            )
+        )
+        val shape = Size(539.0, 959.0)
+
+        val res: RecoveryFromHomography? = arCore.findPoseTransformationParams(shape, x_d, x_u)
+
+        val expR_c_b = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(-0.36346958963518994, 0.8103524968812156, -0.45958534377067123),
+                doubleArrayOf(0.9267872755629462, 0.2644149733373461, -0.26673970032528355),
+                doubleArrayOf(-0.09463193575658364, -0.5228896180585249, -0.8471311846824975)
+            )
+        )
+
+        val expt_c_cb = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(-53.227998757614074),
+                doubleArrayOf(-174.28181170485738),
+                doubleArrayOf(779.0564081797978),
+            )
+        )
+
+        val expfx = 1013.8046219476499
+        val expfy = 1014.2291281419842
+
+        assertNotNull(res)
+        assertEquals(expR_c_b, res.R_c_b)
+        assertEquals(expt_c_cb, res.t_c_cb)
+        assertEquals(expfx, res.fx)
+        assertEquals(expfy, res.fy)
+    }
+
+    @Test
+    fun test_homographyFrom4PointCorrespondences() {
+
     }
 }
