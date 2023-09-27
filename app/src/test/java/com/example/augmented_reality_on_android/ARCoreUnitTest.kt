@@ -2,7 +2,10 @@ package com.example.augmented_reality_on_android
 
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import org.jetbrains.kotlinx.multik.ndarray.data.get
+import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -15,20 +18,40 @@ import kotlin.test.assertNotNull
 class ARCoreUnitTest {
     private lateinit var arCore: ARCore
     private lateinit var H_c_b: D2Array<Double>
+    private lateinit var x_d: D2Array<Double>
+    private lateinit var x_u: D2Array<Double>
+    private lateinit var shape: Size
 
     @BeforeEach
     fun setUp() {
         System.loadLibrary("opencv_java480")
         val reference_image = Mat(100, 100, CvType.CV_32FC2);
-        this.arCore = ARCore(reference_image)
+        arCore = ARCore(reference_image)
 
-        this.H_c_b = mk.ndarray(
+        H_c_b = mk.ndarray(
             arrayOf(
                 doubleArrayOf(-1.0, 2.0, 3.0),
                 doubleArrayOf(4.0, -5.0, 6.0),
                 doubleArrayOf(7.0, 8.0, 9.0),
             )
         )
+        x_d = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(200.23314, 252.60797),
+                doubleArrayOf(109.43447, 490.69876),
+                doubleArrayOf(440.8565, 630.7588),
+                doubleArrayOf(555.4785, 320.25253),
+            )
+        )
+        x_u = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(0.0, 0.0),
+                doubleArrayOf(205.0, 0.0),
+                doubleArrayOf(205.0, 285.0),
+                doubleArrayOf(0.0, 285.0),
+            )
+        )
+        shape = Size(539.0, 959.0)
     }
 
     @Test
@@ -90,25 +113,6 @@ class ARCoreUnitTest {
 
     @Test
     fun test_findPoseTransformationParams() {
-        val x_d = mk.ndarray(
-            arrayOf(
-                doubleArrayOf(200.23314, 252.60797),
-                doubleArrayOf(109.43447, 490.69876),
-                doubleArrayOf(440.8565, 630.7588),
-                doubleArrayOf(555.4785, 320.25253),
-            )
-        )
-
-        val x_u = mk.ndarray(
-            arrayOf(
-                doubleArrayOf(0.0, 0.0),
-                doubleArrayOf(205.0, 0.0),
-                doubleArrayOf(205.0, 285.0),
-                doubleArrayOf(0.0, 285.0),
-            )
-        )
-        val shape = Size(539.0, 959.0)
-
         val res: RecoveryFromHomography? = arCore.findPoseTransformationParams(shape, x_d, x_u)
 
         val expR_c_b = mk.ndarray(
@@ -139,6 +143,27 @@ class ARCoreUnitTest {
 
     @Test
     fun test_homographyFrom4PointCorrespondences() {
+        val x_d_center = Size(shape.width / 2, shape.height / 2)
+        val x_ds_center: D2Array<Double> = mk.zeros(4, 2)
+        for (i in 0..3) {
+            x_ds_center[i] = mk.ndarray(
+                doubleArrayOf(
+                    x_d[i, 0] - x_d_center.width,
+                    x_d[i, 1] - x_d_center.height
+                )
+            )
+        }
 
+        val res = arCore.homographyFrom4PointCorrespondences(x_ds_center, x_u)
+
+        val cH_c_b = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(-0.4369927800171011, 1.0158928755270795, -69.26686000000001),
+                doubleArrayOf(1.16100377429334, 0.36574923601165304, -226.89203),
+                doubleArrayOf(-3.703209208324552e-05, -8.062916332568412e-4, 1.0),
+            )
+        )
+
+        assertEquals(cH_c_b, res)
     }
 }
