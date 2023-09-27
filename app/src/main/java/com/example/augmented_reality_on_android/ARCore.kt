@@ -1,7 +1,5 @@
 package com.example.augmented_reality_on_android
 
-import android.graphics.Bitmap
-import org.opencv.imgcodecs.Imgcodecs
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.linalg.inv
 import org.jetbrains.kotlinx.multik.api.linalg.norm
@@ -16,7 +14,9 @@ import org.opencv.core.*
 import org.opencv.core.Core.perspectiveTransform
 import org.opencv.features2d.BFMatcher
 import org.opencv.features2d.SIFT
+import org.opencv.imgproc.Imgproc
 import kotlin.math.*
+
 
 class Utils {
     companion object {
@@ -51,6 +51,9 @@ class ARCore {
     private var sift: SIFT
     private var matcher: BFMatcher
     private var reference_image: Mat
+    private var objectPoints: D2Array<Double>
+    private var edges: D2Array<Int>
+    private var edgeColors: Array<Scalar>
 
     constructor(reference_image: Mat) {
         this.reference_image = reference_image
@@ -61,6 +64,64 @@ class ARCore {
         sift.nOctaveLayers = 4
 
         matcher = BFMatcher.create(Core.NORM_L2, true)
+
+        edges = mk.ndarray(
+            arrayOf(
+                // Lines of back plane
+                intArrayOf(4, 5),
+                intArrayOf(5, 6),
+                intArrayOf(6, 7),
+                intArrayOf(7, 4),
+                // Lines connecting front with back-plane
+                intArrayOf(8, 4),
+                intArrayOf(1, 5),
+                intArrayOf(2, 6),
+                intArrayOf(3, 7),
+                // Lines of front plane
+                intArrayOf(0, 1),
+                intArrayOf(1, 2),
+                intArrayOf(2, 3),
+                intArrayOf(3, 0),
+                // Lines indicating the coordinate frame
+                intArrayOf(0, 8),
+                intArrayOf(0, 9),
+                intArrayOf(0, 10),
+            )
+        )
+        edgeColors = arrayOf(
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 0.0, 255.0),
+            Scalar(0.0, 0.0, 255.0, 255.0),
+            Scalar(0.0, 255.0, 0.0, 255.0),
+            Scalar(255.0, 0.0, 0.0, 255.0),
+        )
+
+
+        // Scale virtual object
+        val Dx = 60.0
+        val Dy = 60.0
+        val Dz = 60.0
+        objectPoints = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(0.0, Dx, Dx, 0.0, 0.0, Dx, Dx, 0.0, Dx, 0.0, 0.0),
+                doubleArrayOf(0.0, 0.0, 0.0, 0.0, Dy, Dy, Dy, Dy, 0.0, Dy, 0.0),
+                doubleArrayOf(0.0, 0.0, Dz, Dz, 0.0, 0.0, Dz, Dz, 0.0, 0.0, Dz),
+            )
+        )
     }
 
     fun recoverRigidBodyMotionAndFocalLengths(H_c_b: D2Array<Double>): RecoveryFromHomography {
@@ -152,7 +213,7 @@ class ARCore {
         val angles = MutableList<Double>(length) { 0.0 }
         for (iter in 0 until length) {
             val alpha = iter * 2 * Math.PI / steps_per_rotation
-            val dr:Double = iter / steps_per_rotation * delta_per_rotation
+            val dr: Double = iter / steps_per_rotation * delta_per_rotation
             val dx = dr * cos(alpha)
             val dy = dr * sin(alpha)
             val x_ds = x_d.copy()
@@ -184,15 +245,37 @@ class ARCore {
         val idx = ratios.indices.maxBy { ratios[it] }
         return solutions[idx]
     }
-/*
+
     fun drawARObject(
-        video_frame: Bitmap,
-        K_c: D2Array<Double>,
-        R_c_b: D2Array<Double>,
-        t_c_cb: D2Array<Double>
+        video_frame: Mat,
+        res: RecoveryFromHomography
     ) {
-        //TODO: implement
-    }*/
+        val K_c = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(res.fx, 0.0, video_frame.size(1) / 2.0),
+                doubleArrayOf(0.0, res.fy, video_frame.size(0) / 2.0),
+                doubleArrayOf(0.0, 0.0, 1.0),
+            )
+        )
+        val points_c = res.R_c_b.dot(objectPoints) + res.t_c_cb
+        val image_points_homogeneous = K_c.dot(points_c)
+        val image_points = mk.zeros<Double>(3, image_points_homogeneous.size)
+        for (i in 0 until image_points_homogeneous.size) {
+            image_points[0, i] = image_points_homogeneous[0, i] / image_points_homogeneous[2, i]
+            image_points[1, i] = image_points_homogeneous[1, i] / image_points_homogeneous[2, i]
+        }
+        for (i in 0 until edges.size) {
+            val pt1 = image_points[0..1, edges[i, 0]]
+            val pt2 = image_points[0..1, edges[i, 1]]
+            Imgproc.line(
+                video_frame,
+                Point(pt1[0], pt1[1]),
+                Point(pt2[0], pt2[1]),
+                edgeColors[i],
+                3
+            );
+        }
+    }
 
     fun focalLength(H_c_b: D2Array<Double>): Double {
         val h00 = H_c_b[0, 0]
@@ -253,23 +336,24 @@ class ARCore {
         srcPtsCoords.fromList(srcPoints)
 
         // Find the homography matrix H using RANSAC
-        val H = Calib3d.findHomography(srcPtsCoords, dstPtsCoords, Calib3d.RANSAC, 5.0)
+        val mask = Mat()
+        val H = Calib3d.findHomography(srcPtsCoords, dstPtsCoords, Calib3d.RANSAC, 5.0, mask)
 
+        val numInliers = Core.countNonZero(mask)
+        //if (numInliers > 50 ) {
+        val height = reference_image.size(0)
+        val width = reference_image.size(1)
         val ref_corners = mk.ndarray(
             arrayOf(
                 intArrayOf(0, 0),
-                intArrayOf(reference_image.size(1) - 1, 0),  // reference_image.size(1) = width
-                intArrayOf(
-                    reference_image.size(1) - 1,
-                    reference_image.size(0) - 1
-                ), // reference_image.size(0) = height
-                intArrayOf(0, reference_image.size(0) - 1)
+                intArrayOf(width - 1, 0),
+                intArrayOf(width - 1, height - 1),
+                intArrayOf(0, height - 1)
             )
-        ).reshape(-1, 1, 2)
-        val x = Mat(4,2,CvType.CV_32FC2)
-        x.put(ref_corners.toIntArray())
-        val ref_corners_transformed = Mat(4,2,CvType.CV_32FC2)
+        )
+        val x = Mat(4, 2, CvType.CV_32S)
+        x.put(0,0, ref_corners.toIntArray())
+        val ref_corners_transformed = Mat(4, 2, CvType.CV_32FC2)
         perspectiveTransform(x, ref_corners_transformed, H)
-
     }
 }

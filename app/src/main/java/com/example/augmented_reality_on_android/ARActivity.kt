@@ -15,7 +15,8 @@ import java.util.*
 
 class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
     private val cameraView by lazy { findViewById<JavaCameraView>(R.id.cameraView) }
-    lateinit var imageMat: Mat
+    private lateinit var imageMat: Mat
+    private lateinit var arCore: ARCore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,19 +33,9 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
             )
         )
 
-        var reference_image: Mat? = null
-        try {
-            reference_image = org.opencv.android.Utils.loadResource(this, R.drawable.book1_reference, CvType.CV_8UC4)
-            val a = ARCore(reference_image)
-            a.recoverRigidBodyMotionAndFocalLengths(H_c_b)
-            a.rigidBodyMotion(H_c_b, 1.0)
-
-            val x_u = mk.rand<Double>(8, 8)
-            val x_d = mk.rand<Double>(8, 2)
-            a.homographyFrom4PointCorrespondences(x_d, x_u)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
+        var reference_image: Mat =
+            org.opencv.android.Utils.loadResource(this, R.drawable.book1_reference, CvType.CV_8UC4)
+        arCore = ARCore(reference_image)
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
@@ -52,11 +43,14 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         val ratio = resources.displayMetrics.widthPixels / height
         cameraView.layoutParams = ViewGroup.LayoutParams(height * ratio, width * ratio)
     }
+
     override fun onCameraViewStopped() {
         imageMat.release()
     }
+
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame?): Mat {
         imageMat = inputFrame!!.rgba()
+        arCore.android_ar(imageMat)
         return imageMat
     }
 
