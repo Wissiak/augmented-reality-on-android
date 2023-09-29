@@ -1,5 +1,6 @@
 package com.example.augmented_reality_on_android
 
+import android.util.Log
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.linalg.inv
 import org.jetbrains.kotlinx.multik.api.linalg.norm
@@ -8,7 +9,9 @@ import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.*
-import org.jetbrains.kotlinx.multik.ndarray.operations.*
+import org.jetbrains.kotlinx.multik.ndarray.operations.append
+import org.jetbrains.kotlinx.multik.ndarray.operations.div
+import org.jetbrains.kotlinx.multik.ndarray.operations.plus
 import org.opencv.calib3d.Calib3d
 import org.opencv.core.*
 import org.opencv.core.Core.perspectiveTransform
@@ -310,7 +313,7 @@ class ARCore {
         return RecoveryFromHomography(R_c_b, t_c_cb, f, f)
     }
 
-    fun android_ar(video_frame: Mat) {
+    fun android_ar(video_frame: Mat): Mat {
         val reference_keypoints = MatOfKeyPoint()
         val reference_descriptors = Mat()
         sift.detectAndCompute(reference_image, Mat(), reference_keypoints, reference_descriptors)
@@ -340,20 +343,28 @@ class ARCore {
         val H = Calib3d.findHomography(srcPtsCoords, dstPtsCoords, Calib3d.RANSAC, 5.0, mask)
 
         val numInliers = Core.countNonZero(mask)
-        //if (numInliers > 50 ) {
-        val height = reference_image.size(0)
-        val width = reference_image.size(1)
-        val ref_corners = mk.ndarray(
-            arrayOf(
-                intArrayOf(0, 0),
-                intArrayOf(width - 1, 0),
-                intArrayOf(width - 1, height - 1),
-                intArrayOf(0, height - 1)
+        Log.i("ARCore", "numInliers: " + numInliers)
+        if (numInliers > 50) {
+            val height = reference_image.size(0)
+            val width = reference_image.size(1)
+            val srcPoints = MatOfPoint2f()
+            srcPoints.fromArray(
+                Point(0.0, 0.0),
+                Point(width - 1.0, 0.0),
+                Point(width - 1.0, height - 1.0),
+                Point(0.0, height - 1.0)
             )
-        )
-        val x = Mat(4, 2, CvType.CV_32S)
-        x.put(0,0, ref_corners.toIntArray())
-        val ref_corners_transformed = Mat(4, 2, CvType.CV_32FC2)
-        perspectiveTransform(x, ref_corners_transformed, H)
+            val dstPoints = MatOfPoint2f() // top left, bottom left, bottom right, top right
+            perspectiveTransform(srcPoints, dstPoints, H)
+
+            val contours: MutableList<MatOfPoint> = ArrayList()
+            for (points2f in dstPoints.toList()) {
+                val points = MatOfPoint(Point(points2f.x, points2f.y))
+                contours.add(points)
+            }
+            Imgproc.polylines(video_frame, contours, true, Scalar(255.0, 255.0, 0.0), 10)
+
+        }
+        return video_frame
     }
 }

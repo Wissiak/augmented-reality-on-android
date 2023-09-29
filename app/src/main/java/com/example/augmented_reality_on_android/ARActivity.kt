@@ -1,22 +1,26 @@
 package com.example.augmented_reality_on_android
 
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Bundle
+import android.view.SurfaceView
 import android.view.ViewGroup
-import org.jetbrains.kotlinx.multik.api.mk
-import org.jetbrains.kotlinx.multik.api.ndarray
-import org.jetbrains.kotlinx.multik.api.rand
-import org.opencv.android.*
+import android.widget.ImageView
+import org.opencv.android.CameraActivity
+import org.opencv.android.CameraBridgeViewBase
+import org.opencv.android.JavaCameraView
+import org.opencv.android.Utils.matToBitmap
 import org.opencv.core.CvType
 import org.opencv.core.Mat
-import java.io.IOException
 import java.util.*
 
 
 class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
     private val cameraView by lazy { findViewById<JavaCameraView>(R.id.cameraView) }
+    private val imageView by lazy { findViewById<ImageView>(R.id.imageView) }
     private lateinit var imageMat: Mat
     private lateinit var arCore: ARCore
+    private var useCamera = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,23 +29,25 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         getPermission()
 
         cameraView.setCvCameraViewListener(this)
-        val H_c_b = mk.ndarray(
-            arrayOf(
-                doubleArrayOf(1.0, 2.0, 3.0),
-                doubleArrayOf(4.0, 5.0, 6.0),
-                doubleArrayOf(7.0, 8.0, 9.0)
-            )
-        )
+        cameraView.visibility = SurfaceView.VISIBLE
 
-        var reference_image: Mat =
-            org.opencv.android.Utils.loadResource(this, R.drawable.book1_reference, CvType.CV_8UC4)
-        arCore = ARCore(reference_image)
+        if (useCamera) {
+            val reference_image: Mat =
+                org.opencv.android.Utils.loadResource(
+                    this,
+                    R.drawable.book1_reference,
+                    CvType.CV_8UC4
+                )
+            arCore = ARCore(reference_image)
+        } else {
+
+        }
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
         imageMat = Mat(width, height, CvType.CV_8UC4)
         val ratio = resources.displayMetrics.widthPixels / height
-        cameraView.layoutParams = ViewGroup.LayoutParams(height * ratio, width * ratio)
+        imageView.layoutParams = ViewGroup.LayoutParams(height * ratio, width * ratio)
     }
 
     override fun onCameraViewStopped() {
@@ -50,7 +56,14 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
 
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame?): Mat {
         imageMat = inputFrame!!.rgba()
-        arCore.android_ar(imageMat)
+        imageMat = arCore.android_ar(imageMat)
+        val imageMat2 = imageMat.t()
+        val bitmap =
+            Bitmap.createBitmap(imageMat2.cols(), imageMat2.rows(), Bitmap.Config.ARGB_8888)
+        matToBitmap(imageMat2, bitmap)
+        runOnUiThread {
+            imageView.setImageBitmap(bitmap)
+        }
         return imageMat
     }
 
@@ -60,7 +73,9 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
 
     override fun onResume() {
         super.onResume()
-        cameraView.enableView()
+        if (useCamera) {
+            cameraView.enableView()
+        }
     }
 
     override fun onPause() {
