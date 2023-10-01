@@ -35,7 +35,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
             val reference_image: Mat =
                 org.opencv.android.Utils.loadResource(
                     this,
-                    R.drawable.book1_reference,
+                    R.drawable.keyboard_reference,
                     CvType.CV_8UC4
                 )
             arCore = ARCore(reference_image)
@@ -59,7 +59,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         imageMat = arCore.android_ar(imageMat)
         val imageMat2 = imageMat.t()
         val bitmap =
-            Bitmap.createBitmap(imageMat2.cols(), imageMat2.rows(), Bitmap.Config.ARGB_8888)
+            Bitmap.createBitmap(imageMat2.cols(), imageMat2.rows(), Bitmap.Config.RGB_565)
         matToBitmap(imageMat2, bitmap)
         runOnUiThread {
             imageView.setImageBitmap(bitmap)

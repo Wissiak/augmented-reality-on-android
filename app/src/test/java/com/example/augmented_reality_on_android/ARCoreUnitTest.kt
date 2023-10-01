@@ -105,6 +105,7 @@ class ARCoreUnitTest {
         val expfx = 763.7985891324039
         val expfy = 762.1111198920303
 
+        assertNotNull(res)
         assertEquals(expR_c_b, res.R_c_b)
         assertEquals(expt_c_cb, res.t_c_cb)
         assertEquals(expfx, res.fx)

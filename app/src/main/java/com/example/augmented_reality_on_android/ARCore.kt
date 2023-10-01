@@ -1,6 +1,7 @@
 package com.example.augmented_reality_on_android
 
 import android.util.Log
+import org.jetbrains.kotlinx.multik.api.d2array
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.linalg.inv
 import org.jetbrains.kotlinx.multik.api.linalg.norm
@@ -9,6 +10,7 @@ import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.*
+import org.jetbrains.kotlinx.multik.ndarray.operations.any
 import org.jetbrains.kotlinx.multik.ndarray.operations.append
 import org.jetbrains.kotlinx.multik.ndarray.operations.div
 import org.jetbrains.kotlinx.multik.ndarray.operations.plus
@@ -37,6 +39,18 @@ class Utils {
 
             return crossProduct
         }
+        fun matToD2Array(mat: Mat, rows: Int, cols: Int): D2Array<Double> {
+            val d2Array = mk.zeros<Double>(rows, cols)
+
+            for (row in 0 until rows) {
+                for (col in 0 until cols) {
+                    d2Array[row, col] = mat.get(row, 0)[col]
+                }
+            }
+
+            return d2Array
+        }
+
     }
 }
 
@@ -76,7 +90,7 @@ class ARCore {
                 intArrayOf(6, 7),
                 intArrayOf(7, 4),
                 // Lines connecting front with back-plane
-                intArrayOf(8, 4),
+                intArrayOf(0, 4),
                 intArrayOf(1, 5),
                 intArrayOf(2, 6),
                 intArrayOf(3, 7),
@@ -92,10 +106,6 @@ class ARCore {
             )
         )
         edgeColors = arrayOf(
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
             Scalar(0.0, 0.0, 0.0, 255.0),
             Scalar(0.0, 0.0, 0.0, 255.0),
             Scalar(0.0, 0.0, 0.0, 255.0),
@@ -127,7 +137,7 @@ class ARCore {
         )
     }
 
-    fun recoverRigidBodyMotionAndFocalLengths(H_c_b: D2Array<Double>): RecoveryFromHomography {
+    fun recoverRigidBodyMotionAndFocalLengths(H_c_b: D2Array<Double>): RecoveryFromHomography? {
         val Ma = mk.ndarray(
             arrayOf(
                 doubleArrayOf(H_c_b[0, 0].pow(2), H_c_b[1][0].pow(2), H_c_b[2][0].pow(2)),
@@ -158,6 +168,9 @@ class ARCore {
         val fx = diags_sqrt[2, 2] / diags_sqrt[0, 0]
         val fy = diags_sqrt[2, 2] / diags_sqrt[1, 1]
 
+        if (R_c_b.any {it.isNaN()}) {
+            return null
+        }
         return RecoveryFromHomography(R_c_b, t_c_cb, fx, fy)
     }
 
@@ -219,8 +232,9 @@ class ARCore {
             val dr: Double = iter / steps_per_rotation * delta_per_rotation
             val dx = dr * cos(alpha)
             val dy = dr * sin(alpha)
+
             val x_ds = x_d.copy()
-            x_ds[1] = x_ds[1] + mk.ndarray(doubleArrayOf(dx, dy)) //TODO check this
+            x_ds[1] = x_ds[1] + mk.ndarray(doubleArrayOf(dx, dy))
             val x_ds_center: D2Array<Double> = mk.zeros(4, 2)
             for (i in 0..3) {
                 x_ds_center[i] = mk.ndarray(
@@ -232,8 +246,8 @@ class ARCore {
             }
             val cH_c_b = homographyFrom4PointCorrespondences(x_ds_center, x_u)
             // Determine the pose and the focal lengths
-            val res: RecoveryFromHomography = recoverRigidBodyMotionAndFocalLengths(cH_c_b)
-            if (res.fx != -1.0) {
+            val res: RecoveryFromHomography? = recoverRigidBodyMotionAndFocalLengths(cH_c_b)
+            if (res != null && res.fx != -1.0) {
                 ratios[iter] = min(res.fx, res.fy) / max(res.fx, res.fy)
                 angles[iter] = alpha
                 solutions[iter] = res
@@ -252,7 +266,7 @@ class ARCore {
     fun drawARObject(
         video_frame: Mat,
         res: RecoveryFromHomography
-    ) {
+    ): Mat {
         val K_c = mk.ndarray(
             arrayOf(
                 doubleArrayOf(res.fx, 0.0, video_frame.size(1) / 2.0),
@@ -260,14 +274,18 @@ class ARCore {
                 doubleArrayOf(0.0, 0.0, 1.0),
             )
         )
+        val B_ = res.t_c_cb.copy()
+        for (i in 0 until 10) {
+            res.t_c_cb = res.t_c_cb.append(B_, axis = 1)
+        }
         val points_c = res.R_c_b.dot(objectPoints) + res.t_c_cb
         val image_points_homogeneous = K_c.dot(points_c)
         val image_points = mk.zeros<Double>(3, image_points_homogeneous.size)
-        for (i in 0 until image_points_homogeneous.size) {
+        for (i in 0 until image_points_homogeneous.shape[1]) {
             image_points[0, i] = image_points_homogeneous[0, i] / image_points_homogeneous[2, i]
             image_points[1, i] = image_points_homogeneous[1, i] / image_points_homogeneous[2, i]
         }
-        for (i in 0 until edges.size) {
+        for (i in 0 until edges.shape[0]) {
             val pt1 = image_points[0..1, edges[i, 0]]
             val pt2 = image_points[0..1, edges[i, 1]]
             Imgproc.line(
@@ -278,6 +296,7 @@ class ARCore {
                 3
             );
         }
+        return video_frame
     }
 
     fun focalLength(H_c_b: D2Array<Double>): Double {
@@ -358,12 +377,23 @@ class ARCore {
             perspectiveTransform(srcPoints, dstPoints, H)
 
             val contours: MutableList<MatOfPoint> = ArrayList()
+            val doubleArray = DoubleArray(dstPoints.size(0) * dstPoints.size(1))
+            var i = 0
             for (points2f in dstPoints.toList()) {
                 val points = MatOfPoint(Point(points2f.x, points2f.y))
+                doubleArray[i] = points2f.x
+                doubleArray[i+1] = points2f.y
                 contours.add(points)
+                i *= 2
             }
             Imgproc.polylines(video_frame, contours, true, Scalar(255.0, 255.0, 0.0), 10)
 
+            val res = findPoseTransformationParams(video_frame.size(), Utils.matToD2Array(dstPoints, 4, 2), Utils.matToD2Array(srcPoints, 4, 2))
+            if (res != null) {
+                drawARObject(video_frame, res)
+            } else {
+                Log.e("ARCore", "findPoseTransformationParams failed")
+            }
         }
         return video_frame
     }
