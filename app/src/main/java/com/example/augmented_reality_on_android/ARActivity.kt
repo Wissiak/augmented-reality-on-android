@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.SurfaceView
 import android.view.ViewGroup
 import android.widget.ImageView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.slider.RangeSlider
 import org.opencv.android.CameraActivity
 import org.opencv.android.CameraBridgeViewBase
@@ -14,6 +15,8 @@ import org.opencv.android.Utils.matToBitmap
 import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
+import java.lang.Integer.max
+import java.lang.Integer.min
 import java.util.*
 
 
@@ -25,6 +28,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
     private val imageView by lazy { findViewById<ImageView>(R.id.imageView) }
     private lateinit var imageMat: Mat
     private lateinit var arCore: ARCore
+    private lateinit var reference_image: Mat
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,14 +47,20 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
             )
         arCore = ARCore(reference_image)
 
+        val fab: FloatingActionButton = findViewById(R.id.fab)
+        fab.setOnClickListener { view ->
+            cameraView.disableView()
+            fab.setImageResource(R.drawable.ic_play)
+        }
+
         sizeX.addOnChangeListener { slider, value, fromUser ->
-            arCore.changeX(value.toDouble())
+            arCore.changeX(min(reference_image.size(0), reference_image.size(1)) / 100.0 * value)
         }
         sizeY.addOnChangeListener { slider, value, fromUser ->
-            arCore.changeY(value.toDouble())
+            arCore.changeY(max(reference_image.size(0), reference_image.size(1)) / 100.0 * value)
         }
         sizeZ.addOnChangeListener { slider, value, fromUser ->
-            arCore.changeZ(value.toDouble())
+            arCore.changeZ(value.toDouble()*5)
         }
     }
 

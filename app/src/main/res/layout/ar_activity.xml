@@ -38,6 +38,7 @@
             android:layout_width="120dp"
             android:layout_height="20dp"
             android:labelFor="@id/size_x"
+            android:textColor="@color/black"
             android:text="Size x"
             tools:ignore="MissingConstraints" />
 
@@ -45,8 +46,8 @@
             android:id="@+id/size_x"
             android:layout_width="120dp"
             android:layout_height="10dp"
-            android:valueFrom="60.0"
-            android:valueTo="640.0"
+            android:valueFrom="10.0"
+            android:valueTo="100.0"
             tools:ignore="MissingConstraints" />
 
         <TextView
@@ -54,6 +55,7 @@
             android:layout_width="120dp"
             android:layout_height="20dp"
             android:labelFor="@id/size_y"
+            android:textColor="@color/black"
             android:text="Size y"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/size_x"
@@ -63,8 +65,8 @@
             android:id="@+id/size_y"
             android:layout_width="120dp"
             android:layout_height="10dp"
-            android:valueFrom="60.0"
-            android:valueTo="1650.0"
+            android:valueFrom="10.0"
+            android:valueTo="100.0"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/text_y"
             tools:ignore="MissingConstraints" />
@@ -74,6 +76,7 @@
             android:layout_width="120dp"
             android:layout_height="20dp"
             android:labelFor="@id/size_z"
+            android:textColor="@color/black"
             android:text="Size z"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/size_y"
@@ -83,11 +86,20 @@
             android:id="@+id/size_z"
             android:layout_width="120dp"
             android:layout_height="10dp"
-            android:valueFrom="60.0"
-            android:valueTo="300.0"
+            android:valueFrom="10.0"
+            android:valueTo="100.0"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/text_z"
             tools:ignore="MissingConstraints" />
     </LinearLayout>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:src="@drawable/ic_pause"
+        android:contentDescription="Pause Video view"
+        android:layout_margin="16dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
