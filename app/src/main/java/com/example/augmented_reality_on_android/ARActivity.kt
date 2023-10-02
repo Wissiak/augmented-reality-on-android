@@ -29,6 +29,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
     private lateinit var imageMat: Mat
     private lateinit var arCore: ARCore
     private lateinit var reference_image: Mat
+    private var isPause: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,8 +50,15 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
 
         val fab: FloatingActionButton = findViewById(R.id.fab)
         fab.setOnClickListener { view ->
-            cameraView.disableView()
-            fab.setImageResource(R.drawable.ic_play)
+            if (isPause) {
+                isPause = false
+                cameraView.enableView()
+                fab.setImageResource(R.drawable.ic_pause)
+            } else {
+                isPause = true
+                cameraView.disableView()
+                fab.setImageResource(R.drawable.ic_play)
+            }
         }
 
         sizeX.addOnChangeListener { slider, value, fromUser ->
