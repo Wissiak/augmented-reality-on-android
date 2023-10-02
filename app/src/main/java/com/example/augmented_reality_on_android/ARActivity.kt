@@ -48,7 +48,6 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
                 R.drawable.book1_reference,
                 CvType.CV_8UC4
             )
-        Core.flip(reference_image, reference_image, 1) // Must apply the same flip as for the camera feed
         arCore = ARCore(reference_image)
 
         val fab: FloatingActionButton = findViewById(R.id.fab)
@@ -98,8 +97,8 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
     }
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame?): Mat {
         imageMat = inputFrame!!.rgba()
-        Core.flip(imageMat, imageMat, 1);
         imageMat = arCore.android_ar(imageMat)
+        Core.flip(imageMat, imageMat, 1);
         val imageMat2 = imageMat.t()
         Core.flip(imageMat2, imageMat2, -1);
         val bitmap =
