@@ -2,10 +2,13 @@ package com.example.augmented_reality_on_android
 
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.os.Bundle
 import android.view.SurfaceView
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.slider.RangeSlider
 import com.google.android.material.switchmaterial.SwitchMaterial
@@ -24,6 +27,8 @@ import java.util.*
 
 class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
     private val cameraView by lazy { findViewById<JavaCameraView>(R.id.cameraView) }
+    private val menu by lazy { findViewById<LinearLayout>(R.id.menu) }
+    private val expandButton by lazy { findViewById<ImageButton>(R.id.expand_button) }
     private val sizeX by lazy { findViewById<RangeSlider>(R.id.size_x) }
     private val sizeY by lazy { findViewById<RangeSlider>(R.id.size_y) }
     private val sizeZ by lazy { findViewById<RangeSlider>(R.id.size_z) }
@@ -32,6 +37,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
     private lateinit var arCore: ARCore
     private lateinit var reference_image: Mat
     private var isPause: Boolean = false
+    private var menuHidden: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +51,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         val reference_image: Mat =
             org.opencv.android.Utils.loadResource(
                 this,
-                R.drawable.book1_reference,
+                R.drawable.keyboard_reference,
                 CvType.CV_8UC4
             )
         arCore = ARCore(reference_image)
@@ -83,6 +89,20 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         val frameToggle: SwitchMaterial = findViewById(R.id.toggle_frame)
         frameToggle.setOnCheckedChangeListener { _, isChecked ->
             arCore.toggleFrame(isChecked)
+        }
+        val menuButton: ImageButton = findViewById(R.id.expand_button)
+        menuButton.setOnClickListener {
+            if (menuHidden) {
+                expandButton.setImageResource(R.drawable.ic_expand_more)
+                expandButton.setBackgroundColor(Color.parseColor("#a0ffffff"))
+                menu.animate().translationY(-menu.height.toFloat())
+                menuHidden = false
+            } else {
+                expandButton.setImageResource(R.drawable.ic_expand_less)
+                expandButton.setBackgroundColor(Color.TRANSPARENT)
+                menu.animate().translationY(0f)
+                menuHidden = true
+            }
         }
     }
 
