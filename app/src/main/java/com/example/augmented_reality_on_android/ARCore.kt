@@ -1,7 +1,6 @@
 package com.example.augmented_reality_on_android
 
 import android.util.Log
-import org.jetbrains.kotlinx.multik.api.d2array
 import org.jetbrains.kotlinx.multik.api.linalg.dot
 import org.jetbrains.kotlinx.multik.api.linalg.inv
 import org.jetbrains.kotlinx.multik.api.linalg.norm
@@ -71,6 +70,9 @@ class ARCore {
     private var objectPoints: D2Array<Double>
     private var edges: D2Array<Int>
     private var edgeColors: Array<Scalar>
+    private var Dx = 60.0
+    private var Dy = 60.0
+    private var Dz = 60.0
 
     constructor(reference_image: Mat) {
         this.reference_image = reference_image
@@ -123,11 +125,6 @@ class ARCore {
             Scalar(255.0, 0.0, 0.0, 255.0),
         )
 
-
-        // Scale virtual object
-        val Dx = 60.0
-        val Dy = 60.0
-        val Dz = 60.0
         objectPoints = mk.ndarray(
             arrayOf(
                 doubleArrayOf(0.0, Dx, Dx, 0.0, 0.0, Dx, Dx, 0.0, Dx, 0.0, 0.0),
@@ -135,6 +132,31 @@ class ARCore {
                 doubleArrayOf(0.0, 0.0, Dz, Dz, 0.0, 0.0, Dz, Dz, 0.0, 0.0, Dz),
             )
         )
+    }
+
+    fun setObjPoints() {
+        objectPoints = mk.ndarray(
+            arrayOf(
+                doubleArrayOf(0.0, Dx, Dx, 0.0, 0.0, Dx, Dx, 0.0, Dx, 0.0, 0.0),
+                doubleArrayOf(0.0, 0.0, 0.0, 0.0, Dy, Dy, Dy, Dy, 0.0, Dy, 0.0),
+                doubleArrayOf(0.0, 0.0, Dz, Dz, 0.0, 0.0, Dz, Dz, 0.0, 0.0, Dz),
+            )
+        )
+    }
+
+    fun changeX(value: Double) {
+        Dx = value
+        setObjPoints()
+    }
+
+    fun changeY(value: Double) {
+        Dy = value
+        setObjPoints()
+    }
+
+    fun changeZ(value: Double) {
+        Dz = value
+        setObjPoints()
     }
 
     fun recoverRigidBodyMotionAndFocalLengths(H_c_b: D2Array<Double>): RecoveryFromHomography? {

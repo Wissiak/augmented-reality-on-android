@@ -7,45 +7,46 @@
     tools:context=".MainActivity">
 
     <ImageView
+        android:id="@+id/ImageView"
         android:layout_width="300dp"
         android:layout_height="300dp"
-        android:id="@+id/ImageView"
-        android:background="#000"
-        android:layout_centerHorizontal="true">
+        android:layout_centerHorizontal="true"
+        android:background="#000">
 
     </ImageView>
-    
+
     <Button
+        android:id="@+id/select"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="select"
-        android:id="@+id/select"
         android:layout_below="@+id/ImageView"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp">
+        android:layout_marginTop="20dp"
+        android:text="select">
 
     </Button>
 
     <Button
+        android:id="@+id/camera"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="camera"
-        android:id="@+id/camera"
         android:layout_below="@+id/select"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp">
+        android:layout_marginTop="20dp"
+        android:text="camera">
 
     </Button>
 
     <Button
+        android:id="@+id/changeView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="AR"
-        android:id="@+id/changeView"
         android:layout_below="@+id/camera"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp">
+        android:layout_marginTop="20dp"
+        android:text="AR">
 
     </Button>
+
 
 </RelativeLayout>

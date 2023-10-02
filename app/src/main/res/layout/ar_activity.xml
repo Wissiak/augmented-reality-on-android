@@ -23,4 +23,55 @@
 
     </ImageView>
 
+    <TextView
+        android:layout_width="80dp"
+        android:layout_height="20dp"
+        android:text="Size x"
+        android:labelFor="@id/size_x"
+        app:layout_constraintBottom_toTopOf="@id/size_x"
+        tools:ignore="MissingConstraints" />
+
+    <com.google.android.material.slider.RangeSlider
+        android:id="@+id/size_x"
+        android:layout_width="100dp"
+        android:layout_height="10dp"
+        android:valueFrom="60.0"
+        android:valueTo="640.0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:ignore="MissingConstraints" />
+    <TextView
+        android:layout_width="80dp"
+        android:layout_height="20dp"
+        android:text="Size y"
+        android:labelFor="@id/size_y"
+        app:layout_constraintBottom_toTopOf="@id/size_y"
+        tools:ignore="MissingConstraints" />
+
+    <com.google.android.material.slider.RangeSlider
+        android:id="@+id/size_y"
+        android:layout_width="100dp"
+        android:layout_height="10dp"
+        android:valueFrom="60.0"
+        android:valueTo="1650.0"
+        app:layout_constraintBottom_toTopOf="@id/size_x"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:ignore="MissingConstraints" />
+    <TextView
+        android:layout_width="80dp"
+        android:layout_height="20dp"
+        android:text="Size z"
+        android:labelFor="@id/size_z"
+        app:layout_constraintBottom_toTopOf="@id/size_z"
+        tools:ignore="MissingConstraints" />
+
+    <com.google.android.material.slider.RangeSlider
+        android:id="@+id/size_z"
+        android:layout_width="100dp"
+        android:layout_height="10dp"
+        android:valueFrom="60.0"
+        android:valueTo="300.0"
+        app:layout_constraintBottom_toTopOf="@id/size_y"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:ignore="MissingConstraints" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,11 +2,11 @@ package com.example.augmented_reality_on_android
 
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.os.Bundle
 import android.view.SurfaceView
 import android.view.ViewGroup
 import android.widget.ImageView
+import com.google.android.material.slider.RangeSlider
 import org.opencv.android.CameraActivity
 import org.opencv.android.CameraBridgeViewBase
 import org.opencv.android.JavaCameraView
@@ -19,6 +19,9 @@ import java.util.*
 
 class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
     private val cameraView by lazy { findViewById<JavaCameraView>(R.id.cameraView) }
+    private val sizeX by lazy { findViewById<RangeSlider>(R.id.size_x) }
+    private val sizeY by lazy { findViewById<RangeSlider>(R.id.size_y) }
+    private val sizeZ by lazy { findViewById<RangeSlider>(R.id.size_z) }
     private val imageView by lazy { findViewById<ImageView>(R.id.imageView) }
     private lateinit var imageMat: Mat
     private lateinit var arCore: ARCore
@@ -39,6 +42,16 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
                 CvType.CV_8UC4
             )
         arCore = ARCore(reference_image)
+
+        sizeX.addOnChangeListener { slider, value, fromUser ->
+            arCore.changeX(value.toDouble())
+        }
+        sizeY.addOnChangeListener { slider, value, fromUser ->
+            arCore.changeY(value.toDouble())
+        }
+        sizeZ.addOnChangeListener { slider, value, fromUser ->
+            arCore.changeZ(value.toDouble())
+        }
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
