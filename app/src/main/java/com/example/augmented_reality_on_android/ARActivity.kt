@@ -2,6 +2,7 @@ package com.example.augmented_reality_on_android
 
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.Bundle
 import android.view.SurfaceView
 import android.view.ViewGroup
@@ -10,6 +11,7 @@ import org.opencv.android.CameraActivity
 import org.opencv.android.CameraBridgeViewBase
 import org.opencv.android.JavaCameraView
 import org.opencv.android.Utils.matToBitmap
+import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import java.util.*
@@ -20,7 +22,6 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
     private val imageView by lazy { findViewById<ImageView>(R.id.imageView) }
     private lateinit var imageMat: Mat
     private lateinit var arCore: ARCore
-    private var useCamera = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,17 +32,13 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         cameraView.setCvCameraViewListener(this)
         cameraView.visibility = SurfaceView.VISIBLE
 
-        if (useCamera) {
-            val reference_image: Mat =
-                org.opencv.android.Utils.loadResource(
-                    this,
-                    R.drawable.keyboard_reference,
-                    CvType.CV_8UC4
-                )
-            arCore = ARCore(reference_image)
-        } else {
-
-        }
+        val reference_image: Mat =
+            org.opencv.android.Utils.loadResource(
+                this,
+                R.drawable.keyboard_reference,
+                CvType.CV_8UC4
+            )
+        arCore = ARCore(reference_image)
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
@@ -53,11 +50,12 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
     override fun onCameraViewStopped() {
         imageMat.release()
     }
-
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame?): Mat {
         imageMat = inputFrame!!.rgba()
+        Core.flip(imageMat, imageMat, 1);
         imageMat = arCore.android_ar(imageMat)
         val imageMat2 = imageMat.t()
+        Core.flip(imageMat2, imageMat2, -1);
         val bitmap =
             Bitmap.createBitmap(imageMat2.cols(), imageMat2.rows(), Bitmap.Config.RGB_565)
         matToBitmap(imageMat2, bitmap)
@@ -73,9 +71,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
 
     override fun onResume() {
         super.onResume()
-        if (useCamera) {
-            cameraView.enableView()
-        }
+        cameraView.enableView()
     }
 
     override fun onPause() {
