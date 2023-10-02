@@ -67,9 +67,9 @@ class ARCore {
     private var sift: SIFT
     private var matcher: BFMatcher
     private var reference_image: Mat
-    private var objectPoints: D2Array<Double>
-    private var edges: D2Array<Int>
-    private var edgeColors: Array<Scalar>
+    private lateinit var objectPoints: D2Array<Double>
+    private lateinit var edges: D2Array<Int>
+    private lateinit var edgeColors: Array<Scalar>
     private var Dx = 60.0
     private var Dy = 60.0
     private var Dz = 60.0
@@ -84,53 +84,44 @@ class ARCore {
 
         matcher = BFMatcher.create(Core.NORM_L2, true)
 
-        edges = mk.ndarray(
-            arrayOf(
-                // Lines of back plane
-                intArrayOf(4, 5),
-                intArrayOf(5, 6),
-                intArrayOf(6, 7),
-                intArrayOf(7, 4),
-                // Lines connecting front with back-plane
-                intArrayOf(0, 4),
-                intArrayOf(1, 5),
-                intArrayOf(2, 6),
-                intArrayOf(3, 7),
-                // Lines of front plane
-                intArrayOf(0, 1),
-                intArrayOf(1, 2),
-                intArrayOf(2, 3),
-                intArrayOf(3, 0),
-                // Lines indicating the coordinate frame
-                intArrayOf(0, 8),
-                intArrayOf(0, 9),
-                intArrayOf(0, 10),
-            )
+        toggleFrame(true)
+        setEdgeColors(Scalar(0.0, 0.0, 0.0))
+        setObjPoints()
+    }
+
+    fun toggleFrame(showFrame: Boolean) {
+        var edges_ = arrayOf(
+            // Lines of back plane
+            intArrayOf(4, 5),
+            intArrayOf(5, 6),
+            intArrayOf(6, 7),
+            intArrayOf(7, 4),
+            // Lines connecting front with back-plane
+            intArrayOf(0, 4),
+            intArrayOf(1, 5),
+            intArrayOf(2, 6),
+            intArrayOf(3, 7),
+            // Lines of front plane
+            intArrayOf(0, 1),
+            intArrayOf(1, 2),
+            intArrayOf(2, 3),
+            intArrayOf(3, 0),
         )
+        if (showFrame) {
+            edges_ += intArrayOf(0, 8)
+            edges_ += intArrayOf(0, 9)
+            edges_ += intArrayOf(0, 10)
+        }
+        edges = mk.ndarray(edges_)
+    }
+
+    fun setEdgeColors(baseColor: Scalar) {
+        val arObjectColor =  Array(12) { index ->  baseColor }
         edgeColors = arrayOf(
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
-            Scalar(0.0, 0.0, 0.0, 255.0),
+            *arObjectColor,
             Scalar(0.0, 0.0, 255.0, 255.0),
             Scalar(0.0, 255.0, 0.0, 255.0),
             Scalar(255.0, 0.0, 0.0, 255.0),
-        )
-
-        objectPoints = mk.ndarray(
-            arrayOf(
-                doubleArrayOf(0.0, Dx, Dx, 0.0, 0.0, Dx, Dx, 0.0, Dx, 0.0, 0.0),
-                doubleArrayOf(0.0, 0.0, 0.0, 0.0, Dy, Dy, Dy, Dy, 0.0, Dy, 0.0),
-                doubleArrayOf(0.0, 0.0, Dz, Dz, 0.0, 0.0, Dz, Dz, 0.0, 0.0, Dz),
-            )
         )
     }
 

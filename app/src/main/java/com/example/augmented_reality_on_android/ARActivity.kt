@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.slider.RangeSlider
+import com.google.android.material.switchmaterial.SwitchMaterial
 import org.opencv.android.CameraActivity
 import org.opencv.android.CameraBridgeViewBase
 import org.opencv.android.JavaCameraView
@@ -15,6 +16,7 @@ import org.opencv.android.Utils.matToBitmap
 import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
+import org.opencv.core.Scalar
 import java.lang.Integer.max
 import java.lang.Integer.min
 import java.util.*
@@ -69,6 +71,18 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         }
         sizeZ.addOnChangeListener { slider, value, fromUser ->
             arCore.changeZ(value.toDouble()*5)
+        }
+        val colorToggle: SwitchMaterial = findViewById(R.id.toggle_color)
+        colorToggle.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                arCore.setEdgeColors(Scalar(255.0, 255.0, 255.0))
+            } else {
+                arCore.setEdgeColors(Scalar(0.0, 0.0, 0.0))
+            }
+        }
+        val frameToggle: SwitchMaterial = findViewById(R.id.toggle_frame)
+        frameToggle.setOnCheckedChangeListener { _, isChecked ->
+            arCore.toggleFrame(isChecked)
         }
     }
 

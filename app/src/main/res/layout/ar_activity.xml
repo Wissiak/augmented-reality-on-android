@@ -57,8 +57,6 @@
             android:labelFor="@id/size_y"
             android:textColor="@color/black"
             android:text="Size y"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/size_x"
             tools:ignore="MissingConstraints" />
 
         <com.google.android.material.slider.RangeSlider
@@ -67,8 +65,6 @@
             android:layout_height="10dp"
             android:valueFrom="10.0"
             android:valueTo="100.0"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/text_y"
             tools:ignore="MissingConstraints" />
 
         <TextView
@@ -78,8 +74,6 @@
             android:labelFor="@id/size_z"
             android:textColor="@color/black"
             android:text="Size z"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/size_y"
             tools:ignore="MissingConstraints" />
 
         <com.google.android.material.slider.RangeSlider
@@ -88,9 +82,22 @@
             android:layout_height="10dp"
             android:valueFrom="10.0"
             android:valueTo="100.0"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/text_z"
             tools:ignore="MissingConstraints" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/toggle_frame"
+            android:layout_width="match_parent"
+            android:checked="true"
+            android:layout_height="wrap_content"
+            android:textColor="@color/black"
+            android:text="Frame" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/toggle_color"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/black"
+            android:text="White" />
     </LinearLayout>
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
