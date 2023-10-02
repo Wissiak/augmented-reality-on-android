@@ -45,9 +45,10 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         val reference_image: Mat =
             org.opencv.android.Utils.loadResource(
                 this,
-                R.drawable.keyboard_reference,
+                R.drawable.book1_reference,
                 CvType.CV_8UC4
             )
+        Core.flip(reference_image, reference_image, 1) // Must apply the same flip as for the camera feed
         arCore = ARCore(reference_image)
 
         val fab: FloatingActionButton = findViewById(R.id.fab)

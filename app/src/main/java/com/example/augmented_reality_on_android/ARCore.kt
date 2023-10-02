@@ -9,10 +9,7 @@ import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ndarray
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.*
-import org.jetbrains.kotlinx.multik.ndarray.operations.any
-import org.jetbrains.kotlinx.multik.ndarray.operations.append
-import org.jetbrains.kotlinx.multik.ndarray.operations.div
-import org.jetbrains.kotlinx.multik.ndarray.operations.plus
+import org.jetbrains.kotlinx.multik.ndarray.operations.*
 import org.opencv.calib3d.Calib3d
 import org.opencv.core.*
 import org.opencv.core.Core.perspectiveTransform
@@ -259,7 +256,7 @@ class ARCore {
             }
             val cH_c_b = homographyFrom4PointCorrespondences(x_ds_center, x_u)
             // Determine the pose and the focal lengths
-            val res: RecoveryFromHomography? = recoverRigidBodyMotionAndFocalLengths(cH_c_b)
+            val res: RecoveryFromHomography? = recoverRigidBodyMotionAndFocalLengths(-cH_c_b)
             if (res != null && res.fx != -1.0) {
                 ratios[iter] = min(res.fx, res.fy) / max(res.fx, res.fy)
                 angles[iter] = alpha
