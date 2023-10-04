@@ -11,6 +11,7 @@ import android.view.View.VISIBLE
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.opencv.android.Utils.bitmapToMat
 import org.opencv.android.Utils.matToBitmap
@@ -39,6 +40,16 @@ class UnwarpActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.unwarp_activity)
 
+        init()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        init()
+    }
+
+    fun init() {
         val imgUri = Uri.parse(intent.getStringExtra("image_uri"))
 
         val bm = uriToBitmap(imgUri)
@@ -87,6 +98,7 @@ class UnwarpActivity : AppCompatActivity() {
             warpedImg.compress(Bitmap.CompressFormat.PNG, 100, stream)
             stream.flush()
             stream.close()
+            Toast.makeText(this, "Image has been added", Toast.LENGTH_SHORT).show()
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
         }
