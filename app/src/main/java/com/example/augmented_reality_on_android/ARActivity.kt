@@ -51,7 +51,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         val reference_image: Mat =
             org.opencv.android.Utils.loadResource(
                 this,
-                R.drawable.keyboard_reference,
+                intent.getIntExtra("reference_image", R.drawable.book1_reference),
                 CvType.CV_8UC4
             )
         arCore = ARCore(reference_image)

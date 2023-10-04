@@ -21,7 +21,8 @@
         android:layout_height="wrap_content"
         app:flexWrap="wrap"
         android:layout_margin="20dp"
-        android:orientation="horizontal" />
+        android:orientation="horizontal"
+        app:justifyContent="space_between" />
 
     <Button
         android:id="@+id/changeView"
