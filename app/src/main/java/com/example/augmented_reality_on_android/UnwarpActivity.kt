@@ -5,6 +5,8 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
+import android.view.View.VISIBLE
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +26,8 @@ import kotlin.math.sqrt
 class UnwarpActivity : AppCompatActivity() {
     private val imageView by lazy { findViewById<ImageView>(R.id.imageView) }
     private val infoText by lazy { findViewById<TextView>(R.id.infoText) }
+    private val saveBtn by lazy { findViewById<Button>(R.id.save) }
+    private val resetBtn by lazy { findViewById<Button>(R.id.reset) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +53,8 @@ class UnwarpActivity : AppCompatActivity() {
                 bitmapToMat(bm, mat)
                 imageView.setImageBitmap(doWarp(mat, pts))
                 infoText.text = "Do you want to save the unwarped image?"
+                saveBtn.visibility = VISIBLE
+                resetBtn.visibility = VISIBLE
             } else {
                 infoText.text = "You have selected ${numPoints}/4 points"
             }
@@ -57,6 +63,12 @@ class UnwarpActivity : AppCompatActivity() {
         imageView.setOnTouchListener { v, event ->
             onPointClick(event)
             false
+        }
+
+        resetBtn.setOnClickListener {
+            numPoints = 0
+            imageView.setImageBitmap(bm)
+            infoText.text = ""
         }
     }
 
