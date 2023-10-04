@@ -117,42 +117,8 @@ class UnwarpActivity : AppCompatActivity() {
         return null
     }
 
-    fun orderPoints(pts: Array<DoubleArray>): Array<DoubleArray> {
-        var topLeft = pts[0]
-        var topRight = pts[0]
-        var bottomRight = pts[0]
-        var bottomLeft = pts[0]
-
-        for (point in pts) {
-            val sum = point[0] + point[1]
-            val diff = point[0] - point[1]
-
-            // Update top-left point
-            if (sum < (topLeft[0] + topLeft[1])) {
-                topLeft = point
-            }
-
-            // Update bottom-right point
-            if (sum > (bottomRight[0] + bottomRight[1])) {
-                bottomRight = point
-            }
-
-            // Update top-right point
-            if (diff > (topRight[0] - topRight[1])) {
-                topRight = point
-            }
-
-            // Update bottom-left point
-            if (diff < (bottomLeft[0] - bottomLeft[1])) {
-                bottomLeft = point
-            }
-        }
-        return arrayOf(topLeft, topRight, bottomRight, bottomLeft)
-    }
-
-    fun fourPointTransform(image: Mat, pts: Array<DoubleArray>): Mat {
-        assert(pts.size == 4)
-        val rect = orderPoints(pts)
+    fun fourPointTransform(image: Mat, rect: Array<DoubleArray>): Mat {
+        assert(rect.size == 4)
         val (tl, tr, br, bl) = rect
 
         val widthA = sqrt((br[0] - bl[0]).pow(2) + (br[1] - bl[1]).pow(2))

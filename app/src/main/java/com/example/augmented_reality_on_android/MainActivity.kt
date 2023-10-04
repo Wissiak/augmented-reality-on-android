@@ -23,10 +23,10 @@ import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var changeViewBtn: Button
     private val referenceImages by lazy { findViewById<FlexboxLayout>(R.id.reference_images) }
+    private val changeViewBtn by lazy { findViewById<Button>(R.id.changeView) }
     private var selectedRefImg: Any = R.drawable.book1_reference
-    private var scale: Float = 1f
+    private var dpScale: Float = 1f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,9 +38,7 @@ class MainActivity : AppCompatActivity() {
             Log.e("LOADED", "Could not load OpenCV")
         }
 
-        scale = applicationContext.resources.displayMetrics.density
-
-        changeViewBtn = findViewById(R.id.changeView)
+        dpScale = applicationContext.resources.displayMetrics.density
 
         changeViewBtn.setOnClickListener {
             val intent = Intent(this, ARActivity::class.java)
@@ -51,6 +49,11 @@ class MainActivity : AppCompatActivity() {
             }
             startActivity(intent)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
         refreshButtons()
     }
 
@@ -102,7 +105,7 @@ class MainActivity : AppCompatActivity() {
                 refreshButtons()
             }
         } else {
-            val size = (120 * scale + 0.5f).toInt()
+            val size = (120 * dpScale + 0.5f).toInt()
             button.layoutParams = LinearLayout.LayoutParams(size, size)
             button.setOnClickListener {
                 val pickImg =
