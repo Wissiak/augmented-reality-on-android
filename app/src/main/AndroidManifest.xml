@@ -26,6 +26,10 @@
             android:name=".ARActivity"
             android:exported="true">
         </activity>
+        <activity
+            android:name=".UnwarpActivity"
+            android:exported="true">
+        </activity>
     </application>
 
 </manifest>

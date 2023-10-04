@@ -12,8 +12,7 @@
         android:layout_height="wrap_content"
         android:text="Change Reference Image"
         android:layout_margin="20dp"
-        android:textSize="25sp"
-        android:textColor="@color/white"/>
+        android:textSize="25sp"/>
 
     <com.google.android.flexbox.FlexboxLayout
         android:id="@+id/reference_images"
