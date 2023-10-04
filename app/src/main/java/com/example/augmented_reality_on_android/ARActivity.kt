@@ -39,7 +39,6 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
     private val imageView by lazy { findViewById<ImageView>(R.id.imageView) }
     private lateinit var imageMat: Mat
     private lateinit var arCore: ARCore
-    private lateinit var reference_image: Mat
     private var isPause: Boolean = false
     private var menuHidden: Boolean = false
 
@@ -52,7 +51,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         cameraView.setCvCameraViewListener(this)
         cameraView.visibility = SurfaceView.VISIBLE
 
-        var reference_image: Mat
+        var reference_image = Mat()
         val refImgResource = intent.getIntExtra("reference_image", -1)
         val refImgFilename = intent.getStringExtra("reference_image")
         if (refImgResource != -1) {
@@ -65,11 +64,14 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
             refImg.setImageResource(refImgResource)
         } else if (refImgFilename != null) {
             val file = File(filesDir, refImgFilename)
-            val bm = BitmapFactory.decodeFile(file.absolutePath)
-            reference_image = Mat()
-            bitmapToMat(bm, reference_image)
-            refImg.setImageBitmap(bm)
-        } else {
+            if (file.exists()) {
+                val bm = BitmapFactory.decodeFile(file.absolutePath)
+                reference_image = Mat()
+                bitmapToMat(bm, reference_image)
+                refImg.setImageBitmap(bm)
+            }
+        }
+        if (reference_image.empty()){
             reference_image =
                 org.opencv.android.Utils.loadResource(
                     this,

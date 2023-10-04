@@ -3,6 +3,8 @@ package com.example.augmented_reality_on_android
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
@@ -29,6 +31,7 @@ import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
 
+
 class UnwarpActivity : AppCompatActivity() {
     private val imageView by lazy { findViewById<ImageView>(R.id.imageView) }
     private val infoText by lazy { findViewById<TextView>(R.id.infoText) }
@@ -52,7 +55,29 @@ class UnwarpActivity : AppCompatActivity() {
     fun init() {
         val imgUri = Uri.parse(intent.getStringExtra("image_uri"))
 
-        val bm = uriToBitmap(imgUri)
+        var bm = uriToBitmap(imgUri)
+
+        // Rotate bitmap correctly because there is an issue on Samsung devices
+        val inputStream = contentResolver.openInputStream(imgUri)
+        val exif = ExifInterface(inputStream!!)
+        val orientation: Int =
+            exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
+        bm = rotateBitmap(bm!!, orientation)
+
+        var width: Int
+        var height: Int
+        val ratio = bm!!.width.toDouble() / bm.height
+        if (bm.width > bm.height) {
+            // Is landscape image
+            width = applicationContext.resources.displayMetrics.widthPixels
+            height = (width / ratio).toInt()
+        } else {
+            // Is portrait image
+            height = 960
+            width = (height * ratio).toInt()
+        }
+
+        bm = Bitmap.createScaledBitmap(bm, width, height, false);
 
         imageView.setImageBitmap(bm)
 
@@ -101,6 +126,39 @@ class UnwarpActivity : AppCompatActivity() {
             Toast.makeText(this, "Image has been added", Toast.LENGTH_SHORT).show()
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
+        }
+    }
+
+    private fun rotateBitmap(bitmap: Bitmap, orientation: Int): Bitmap? {
+        val matrix = Matrix()
+        when (orientation) {
+            ExifInterface.ORIENTATION_NORMAL -> return bitmap
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.setScale(-1f, 1f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.setRotate(180f)
+            ExifInterface.ORIENTATION_FLIP_VERTICAL -> {
+                matrix.setRotate(180f)
+                matrix.postScale(-1f, 1f)
+            }
+            ExifInterface.ORIENTATION_TRANSPOSE -> {
+                matrix.setRotate(90f)
+                matrix.postScale(-1f, 1f)
+            }
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.setRotate(90f)
+            ExifInterface.ORIENTATION_TRANSVERSE -> {
+                matrix.setRotate(-90f)
+                matrix.postScale(-1f, 1f)
+            }
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.setRotate(-90f)
+            else -> return bitmap
+        }
+        return try {
+            val bmRotated =
+                Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            bitmap.recycle()
+            bmRotated
+        } catch (e: OutOfMemoryError) {
+            e.printStackTrace()
+            null
         }
     }
 

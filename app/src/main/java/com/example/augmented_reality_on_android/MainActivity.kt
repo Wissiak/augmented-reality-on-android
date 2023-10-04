@@ -121,7 +121,9 @@ class MainActivity : AppCompatActivity() {
 
     fun loadCustomRefImages() {
         for (file in filesDir.list()!!) {
-            addRefImg(file)
+            if (file.endsWith(".png")) {
+                addRefImg(file)
+            }
         }
     }
 

@@ -21,6 +21,12 @@
         android:text="Select clock-wise, starting with the top-left corner!"
         android:textSize="18sp" />
 
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+    </FrameLayout>
+
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="wrap_content"
