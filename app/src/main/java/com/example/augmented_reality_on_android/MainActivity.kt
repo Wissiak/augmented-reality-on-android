@@ -2,6 +2,7 @@ package com.example.augmented_reality_on_android
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -15,11 +16,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.flexbox.FlexboxLayout
 import org.opencv.android.OpenCVLoader
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
     private lateinit var changeViewBtn: Button
     private val referenceImages by lazy { findViewById<FlexboxLayout>(R.id.reference_images) }
-    private var selectedRefImg: Int = R.drawable.book1_reference
+    private var selectedRefImg: Any = R.drawable.book1_reference
+    private var scale: Float = 1f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,46 +34,68 @@ class MainActivity : AppCompatActivity() {
             Log.e("LOADED", "Could not load OpenCV")
         }
 
+        scale = applicationContext.resources.displayMetrics.density
+
         changeViewBtn = findViewById(R.id.changeView)
 
         changeViewBtn.setOnClickListener {
             val intent = Intent(this, ARActivity::class.java)
-            intent.putExtra("reference_image", selectedRefImg)
+            if (selectedRefImg is Int) {
+                intent.putExtra("reference_image", selectedRefImg as Int)
+            } else if(selectedRefImg is String) {
+                intent.putExtra("reference_image", selectedRefImg as String)
+            }
             startActivity(intent)
         }
 
 
-        val scale = applicationContext.resources.displayMetrics.density;
-        fun addRefImg(id: Int, isAddButton: Boolean = false) {
-            val view: View = LayoutInflater.from(this).inflate(R.layout.ref_img_layout, null)
-            val button: ImageButton = view.findViewById(R.id.image_button) as ImageButton
-            val checkButton: ImageButton = view.findViewById(R.id.ref_img_checked) as ImageButton
-            button.setImageResource(id)
-            if (!isAddButton) {
-                button.setOnClickListener {
-                    selectedRefImg = id
-                    // Refresh views to show checkButton correctly
-                    referenceImages.removeAllViews()
-                    addRefImg(R.drawable.book1_reference)
-                    addRefImg(R.drawable.keyboard_reference)
-                    addRefImg(R.drawable.ic_add, true)
-                }
-            } else {
-                val size = (120 * scale + 0.5f).toInt()
-                button.layoutParams = LinearLayout.LayoutParams(size, size)
-                button.setOnClickListener {
-                    val pickImg = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
-                    changeImage.launch(pickImg)
-                }
-            }
-            if (selectedRefImg == id) {
-                checkButton.visibility = View.VISIBLE
-            }
-            referenceImages.addView(view)
-        }
         addRefImg(R.drawable.book1_reference)
         addRefImg(R.drawable.keyboard_reference)
+        loadCustomRefImages()
         addRefImg(R.drawable.ic_add, true)
+    }
+
+    fun addRefImg(id: Any, isAddButton: Boolean = false) {
+        val view: View = LayoutInflater.from(this).inflate(R.layout.ref_img_layout, null)
+        val button: ImageButton = view.findViewById(R.id.image_button) as ImageButton
+        val checkButton: ImageButton = view.findViewById(R.id.ref_img_checked) as ImageButton
+        if (id is Int) {
+            button.setImageResource(id)
+        } else if (id is String) {
+            val file = File(filesDir, id)
+            if (file.exists()) {
+                button.setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))
+            }
+        } else {
+            return
+        }
+        if (!isAddButton) {
+            button.setOnClickListener {
+                selectedRefImg = id
+                // Refresh views to show checkButton correctly
+                referenceImages.removeAllViews()
+                addRefImg(R.drawable.book1_reference)
+                addRefImg(R.drawable.keyboard_reference)
+                loadCustomRefImages()
+                addRefImg(R.drawable.ic_add, true)
+            }
+        } else {
+            val size = (120 * scale + 0.5f).toInt()
+            button.layoutParams = LinearLayout.LayoutParams(size, size)
+            button.setOnClickListener {
+                val pickImg = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+                changeImage.launch(pickImg)
+            }
+        }
+        if (selectedRefImg == id) {
+            checkButton.visibility = View.VISIBLE
+        }
+        referenceImages.addView(view)
+    }
+    fun loadCustomRefImages() {
+        for (file in filesDir.list()!!) {
+            addRefImg(file)
+        }
     }
 
     private val changeImage =

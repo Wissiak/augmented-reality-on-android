@@ -1,5 +1,6 @@
 package com.example.augmented_reality_on_android
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -17,8 +18,11 @@ import org.opencv.core.Mat
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import org.opencv.imgproc.Imgproc.getPerspectiveTransform
+import java.io.File
 import java.io.FileDescriptor
+import java.io.FileOutputStream
 import java.io.IOException
+import java.util.*
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -28,6 +32,7 @@ class UnwarpActivity : AppCompatActivity() {
     private val infoText by lazy { findViewById<TextView>(R.id.infoText) }
     private val saveBtn by lazy { findViewById<Button>(R.id.save) }
     private val resetBtn by lazy { findViewById<Button>(R.id.reset) }
+    private lateinit var warpedImg: Bitmap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,13 +50,15 @@ class UnwarpActivity : AppCompatActivity() {
 
         var numPoints = 0
         fun onPointClick(event: MotionEvent) {
-            pts[numPoints] = doubleArrayOf((event.x - posXY[0]).toDouble(), (event.y - posXY[1]).toDouble())
+            pts[numPoints] =
+                doubleArrayOf((event.x - posXY[0]).toDouble(), (event.y - posXY[1]).toDouble())
             numPoints++
 
             if (numPoints == 4) {
                 val mat = Mat()
                 bitmapToMat(bm, mat)
-                imageView.setImageBitmap(doWarp(mat, pts))
+                warpedImg = doWarp(mat, pts)
+                imageView.setImageBitmap(warpedImg)
                 infoText.text = "Do you want to save the unwarped image?"
                 saveBtn.visibility = VISIBLE
                 resetBtn.visibility = VISIBLE
@@ -69,6 +76,16 @@ class UnwarpActivity : AppCompatActivity() {
             numPoints = 0
             imageView.setImageBitmap(bm)
             infoText.text = ""
+        }
+
+        saveBtn.setOnClickListener {
+            val file = File(filesDir, UUID.randomUUID().toString() + ".png")
+            val stream = FileOutputStream(file)
+            warpedImg.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            stream.flush()
+            stream.close()
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
         }
     }
 
