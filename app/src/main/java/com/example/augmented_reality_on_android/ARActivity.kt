@@ -29,6 +29,7 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
     private val cameraView by lazy { findViewById<JavaCameraView>(R.id.cameraView) }
     private val menu by lazy { findViewById<LinearLayout>(R.id.menu) }
     private val expandButton by lazy { findViewById<ImageButton>(R.id.expand_button) }
+    private val refImg by lazy { findViewById<ImageView>(R.id.ref_img) }
     private val sizeX by lazy { findViewById<RangeSlider>(R.id.size_x) }
     private val sizeY by lazy { findViewById<RangeSlider>(R.id.size_y) }
     private val sizeZ by lazy { findViewById<RangeSlider>(R.id.size_z) }
@@ -48,13 +49,15 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         cameraView.setCvCameraViewListener(this)
         cameraView.visibility = SurfaceView.VISIBLE
 
+        val refImgResource = intent.getIntExtra("reference_image", R.drawable.book1_reference)
         val reference_image: Mat =
             org.opencv.android.Utils.loadResource(
                 this,
-                intent.getIntExtra("reference_image", R.drawable.book1_reference),
+                refImgResource,
                 CvType.CV_8UC4
             )
         arCore = ARCore(reference_image)
+        refImg.setImageResource(refImgResource)
 
         val fab: FloatingActionButton = findViewById(R.id.fab)
         fab.setOnClickListener { view ->

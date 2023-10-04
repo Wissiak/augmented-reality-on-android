@@ -100,6 +100,19 @@
             android:layout_height="wrap_content"
             android:text="White"
             android:textColor="@color/black" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reference Image"/>
+
+        <ImageView
+            android:id="@+id/ref_img"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:gravity="end"
+            android:scaleType="fitCenter"
+            android:contentDescription="Reference Image" />
     </LinearLayout>
 
     <ImageButton
