@@ -2,6 +2,7 @@ package com.example.augmented_reality_on_android
 
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
 import android.view.SurfaceView
@@ -15,11 +16,13 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import org.opencv.android.CameraActivity
 import org.opencv.android.CameraBridgeViewBase
 import org.opencv.android.JavaCameraView
+import org.opencv.android.Utils.bitmapToMat
 import org.opencv.android.Utils.matToBitmap
 import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Scalar
+import java.io.File
 import java.lang.Integer.max
 import java.lang.Integer.min
 import java.util.*
@@ -49,15 +52,34 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         cameraView.setCvCameraViewListener(this)
         cameraView.visibility = SurfaceView.VISIBLE
 
-        val refImgResource = intent.getIntExtra("reference_image", R.drawable.book1_reference)
-        val reference_image: Mat =
-            org.opencv.android.Utils.loadResource(
-                this,
-                refImgResource,
-                CvType.CV_8UC4
-            )
+        var reference_image: Mat
+        val refImgResource = intent.getIntExtra("reference_image", -1)
+        val refImgFilename = intent.getStringExtra("reference_image")
+        if (refImgResource != -1) {
+            reference_image =
+                org.opencv.android.Utils.loadResource(
+                    this,
+                    refImgResource,
+                    CvType.CV_8UC4
+                )
+            refImg.setImageResource(refImgResource)
+        } else if (refImgFilename != null) {
+            val file = File(filesDir, refImgFilename)
+            val bm = BitmapFactory.decodeFile(file.absolutePath)
+            reference_image = Mat()
+            bitmapToMat(bm, reference_image)
+            refImg.setImageBitmap(bm)
+        } else {
+            reference_image =
+                org.opencv.android.Utils.loadResource(
+                    this,
+                    R.drawable.book1_reference,
+                    CvType.CV_8UC4
+                )
+            refImg.setImageResource(refImgResource)
+        }
+
         arCore = ARCore(reference_image)
-        refImg.setImageResource(refImgResource)
 
         val fab: FloatingActionButton = findViewById(R.id.fab)
         fab.setOnClickListener { view ->
