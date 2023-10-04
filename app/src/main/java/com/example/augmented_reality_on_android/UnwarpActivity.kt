@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
+import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
 import android.widget.Button
 import android.widget.ImageView
@@ -76,6 +77,8 @@ class UnwarpActivity : AppCompatActivity() {
             numPoints = 0
             imageView.setImageBitmap(bm)
             infoText.text = ""
+            saveBtn.visibility = INVISIBLE
+            resetBtn.visibility = INVISIBLE
         }
 
         saveBtn.setOnClickListener {
