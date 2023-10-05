@@ -23,8 +23,6 @@ import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Scalar
 import java.io.File
-import java.lang.Integer.max
-import java.lang.Integer.min
 import java.util.*
 
 
@@ -97,10 +95,10 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         }
 
         sizeX.addOnChangeListener { slider, value, fromUser ->
-            arCore.changeX(min(reference_image.size(0), reference_image.size(1)) / 100.0 * value)
+            arCore.changeX(reference_image.size(1) / 100.0 * value)
         }
         sizeY.addOnChangeListener { slider, value, fromUser ->
-            arCore.changeY(max(reference_image.size(0), reference_image.size(1)) / 100.0 * value)
+            arCore.changeY(reference_image.size(0) / 100.0 * value)
         }
         sizeZ.addOnChangeListener { slider, value, fromUser ->
             arCore.changeZ(value.toDouble()*5)
