@@ -46,7 +46,8 @@ class UnwarpActivity : AppCompatActivity() {
     private var width: Int = 0
     private var height: Int = 0
     private var zoomFactor: Float = 10f
-    private var pointClick: UInt = 0u
+    private val cornerPoints = Array(4) { DoubleArray(2) }
+    private var numPoints = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +87,8 @@ class UnwarpActivity : AppCompatActivity() {
             exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
         refImg = rotateBitmap(refImg, orientation)!!
 
+
+        // Make reference image not too large
         val ratio = refImg.width.toDouble() / refImg.height
         if (refImg.width > refImg.height) {
             // Is landscape image
@@ -96,64 +99,14 @@ class UnwarpActivity : AppCompatActivity() {
             height = 960
             width = (height * ratio).toInt()
         }
-
+        // Scale the reference image to the desired size
         refImg = Bitmap.createScaledBitmap(refImg, width, height, false)
 
         refImgZoomed = getZoomedImage(refImg, zoomFactor)
-        zoomImg.setImageBitmap(refImg)
 
         imageView.setImageBitmap(refImg)
-
-        val pts = Array(4) { DoubleArray(2) }
-        val posXY = IntArray(2)
-        imageView.getLocationOnScreen(posXY)
-
-        var numPoints = 0
-        fun onPointClick(event: MotionEvent) {
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    popupWindow.showAtLocation(window.decorView, Gravity.NO_GRAVITY, imageViewLocation[0] + event.x.toInt() - 50 - zoomSize, imageViewLocation[1] + event.y.toInt() - 50 - zoomSize)
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val x = event.x.toInt()
-                    val y = event.y.toInt()
-                    if (x !in 0..width || y !in 0..height) {
-                        popupWindow.dismiss()
-                        return
-                    }
-                    val xConstrained = max((x*zoomFactor).toInt() - zoomSize/2, 0)
-                    val yConstrained = max((y*zoomFactor).toInt() - zoomSize/2, 0)
-                    val widthConstrained = min(refImgZoomed.width - xConstrained, zoomSize)
-                    val heightConstrained = min(refImgZoomed.height - yConstrained, zoomSize)
-                    zoomImg.setImageBitmap(Bitmap.createBitmap(refImgZoomed, xConstrained, yConstrained, widthConstrained, heightConstrained))
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    popupWindow.dismiss()
-                    if (numPoints > 3) {
-                        return
-                    }
-
-                    pts[numPoints] =
-                        doubleArrayOf((event.x - posXY[0]).toDouble(), (event.y - posXY[1]).toDouble())
-                    numPoints++
-
-                    if (numPoints == 4) {
-                        val mat = Mat()
-                        bitmapToMat(refImg, mat)
-                        warpedImg = doWarp(mat, pts)
-                        imageView.setImageBitmap(warpedImg)
-                        infoText.text = "Do you want to save the unwarped image?"
-                        saveBtn.visibility = VISIBLE
-                        resetBtn.visibility = VISIBLE
-                    } else {
-                        infoText.text = "You have selected ${numPoints}/4 points"
-                    }
-                }
-            }
-        }
-
         imageView.setOnTouchListener { v, event ->
-            onPointClick(event)
+            onPointClick(event, refImg)
             true
         }
 
@@ -177,6 +130,62 @@ class UnwarpActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleZoom(event: MotionEvent) {
+        val x = event.x.toInt()
+        val y = event.y.toInt()
+        if (x !in 0..width || y !in 0..height) {
+            popupWindow.dismiss()
+            return
+        }
+        val xConstrained = max((x*zoomFactor).toInt() - zoomSize/2, 0)
+        val yConstrained = max((y*zoomFactor).toInt() - zoomSize/2, 0)
+        val widthConstrained = min(refImgZoomed.width - xConstrained, zoomSize)
+        val heightConstrained = min(refImgZoomed.height - yConstrained, zoomSize)
+        zoomImg.setImageBitmap(Bitmap.createBitmap(refImgZoomed, xConstrained, yConstrained, widthConstrained, heightConstrained))
+    }
+
+    private fun addCorner(event: MotionEvent, refImg: Bitmap) {
+        popupWindow.dismiss()
+        if (numPoints > 3) {
+            return
+        }
+
+        cornerPoints[numPoints] = doubleArrayOf(event.x.toDouble(), event.y.toDouble())
+        numPoints++
+
+        if (numPoints == 4) {
+            val mat = Mat()
+            bitmapToMat(refImg, mat)
+            warpedImg = doWarp(mat, cornerPoints)
+            imageView.setImageBitmap(warpedImg)
+            infoText.text = "Do you want to save the unwarped image?"
+            saveBtn.visibility = VISIBLE
+            resetBtn.visibility = VISIBLE
+        } else {
+            infoText.text = "You have selected ${numPoints}/4 points"
+        }
+    }
+
+    private fun onPointClick(event: MotionEvent, refImg: Bitmap) {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                popupWindow.showAtLocation(window.decorView, Gravity.NO_GRAVITY, imageViewLocation[0] + event.x.toInt() - 50 - zoomSize, imageViewLocation[1] + event.y.toInt() - 50 - zoomSize)
+
+                handleZoom(event)
+            }
+            MotionEvent.ACTION_MOVE -> {
+                handleZoom(event)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                addCorner(event, refImg)
+            }
+        }
+    }
+
+    /**
+     * Rotate a Bitmap equally on all Android devices
+     * Code from https://stackoverflow.com/a/57389676/6281103
+     */
     private fun rotateBitmap(bitmap: Bitmap, orientation: Int): Bitmap? {
         val matrix = Matrix()
         when (orientation) {
