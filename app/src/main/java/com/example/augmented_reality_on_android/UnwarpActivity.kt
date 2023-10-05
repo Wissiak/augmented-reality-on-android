@@ -7,13 +7,13 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
+import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.View
 import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import org.opencv.android.Utils.bitmapToMat
 import org.opencv.android.Utils.matToBitmap
@@ -28,9 +28,9 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.*
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sqrt
-
 
 class UnwarpActivity : AppCompatActivity() {
     private val imageView by lazy { findViewById<ImageView>(R.id.imageView) }
@@ -38,10 +38,26 @@ class UnwarpActivity : AppCompatActivity() {
     private val saveBtn by lazy { findViewById<Button>(R.id.save) }
     private val resetBtn by lazy { findViewById<Button>(R.id.reset) }
     private lateinit var warpedImg: Bitmap
+    private lateinit var popupWindow: PopupWindow
+    private lateinit var zoomImg: ImageView
+    private lateinit var refImgZoomed: Bitmap
+    private val imageViewLocation = IntArray(2)
+    private val zoomSize = 400
+    private var width: Int = 0
+    private var height: Int = 0
+    private var zoomFactor: Float = 10f
+    private var pointClick: UInt = 0u
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.unwarp_activity)
+
+        val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
+        val popupView: View = inflater.inflate(R.layout.zoom_popup, null)
+
+        popupWindow = PopupWindow(popupView, zoomSize, zoomSize)
+
+        zoomImg = popupView.findViewById(R.id.zoom_img)
 
         init()
     }
@@ -52,22 +68,26 @@ class UnwarpActivity : AppCompatActivity() {
         init()
     }
 
-    fun init() {
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+
+        imageView.getLocationOnScreen(imageViewLocation)
+    }
+
+    private fun init() {
         val imgUri = Uri.parse(intent.getStringExtra("image_uri"))
 
-        var bm = uriToBitmap(imgUri)
+        var refImg = uriToBitmap(imgUri)!!
 
         // Rotate bitmap correctly because there is an issue on Samsung devices
         val inputStream = contentResolver.openInputStream(imgUri)
         val exif = ExifInterface(inputStream!!)
         val orientation: Int =
             exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
-        bm = rotateBitmap(bm!!, orientation)
+        refImg = rotateBitmap(refImg, orientation)!!
 
-        var width: Int
-        var height: Int
-        val ratio = bm!!.width.toDouble() / bm.height
-        if (bm.width > bm.height) {
+        val ratio = refImg.width.toDouble() / refImg.height
+        if (refImg.width > refImg.height) {
             // Is landscape image
             width = applicationContext.resources.displayMetrics.widthPixels
             height = (width / ratio).toInt()
@@ -77,9 +97,12 @@ class UnwarpActivity : AppCompatActivity() {
             width = (height * ratio).toInt()
         }
 
-        bm = Bitmap.createScaledBitmap(bm, width, height, false);
+        refImg = Bitmap.createScaledBitmap(refImg, width, height, false)
 
-        imageView.setImageBitmap(bm)
+        refImgZoomed = getZoomedImage(refImg, zoomFactor)
+        zoomImg.setImageBitmap(refImg)
+
+        imageView.setImageBitmap(refImg)
 
         val pts = Array(4) { DoubleArray(2) }
         val posXY = IntArray(2)
@@ -87,31 +110,56 @@ class UnwarpActivity : AppCompatActivity() {
 
         var numPoints = 0
         fun onPointClick(event: MotionEvent) {
-            pts[numPoints] =
-                doubleArrayOf((event.x - posXY[0]).toDouble(), (event.y - posXY[1]).toDouble())
-            numPoints++
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    popupWindow.showAtLocation(window.decorView, Gravity.NO_GRAVITY, imageViewLocation[0] + event.x.toInt() - 50 - zoomSize, imageViewLocation[1] + event.y.toInt() - 50 - zoomSize)
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val x = event.x.toInt()
+                    val y = event.y.toInt()
+                    if (x !in 0..width || y !in 0..height) {
+                        popupWindow.dismiss()
+                        return
+                    }
+                    val xConstrained = max((x*zoomFactor).toInt() - zoomSize/2, 0)
+                    val yConstrained = max((y*zoomFactor).toInt() - zoomSize/2, 0)
+                    val widthConstrained = min(refImgZoomed.width - xConstrained, zoomSize)
+                    val heightConstrained = min(refImgZoomed.height - yConstrained, zoomSize)
+                    zoomImg.setImageBitmap(Bitmap.createBitmap(refImgZoomed, xConstrained, yConstrained, widthConstrained, heightConstrained))
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    popupWindow.dismiss()
+                    if (numPoints > 3) {
+                        return
+                    }
 
-            if (numPoints == 4) {
-                val mat = Mat()
-                bitmapToMat(bm, mat)
-                warpedImg = doWarp(mat, pts)
-                imageView.setImageBitmap(warpedImg)
-                infoText.text = "Do you want to save the unwarped image?"
-                saveBtn.visibility = VISIBLE
-                resetBtn.visibility = VISIBLE
-            } else {
-                infoText.text = "You have selected ${numPoints}/4 points"
+                    pts[numPoints] =
+                        doubleArrayOf((event.x - posXY[0]).toDouble(), (event.y - posXY[1]).toDouble())
+                    numPoints++
+
+                    if (numPoints == 4) {
+                        val mat = Mat()
+                        bitmapToMat(refImg, mat)
+                        warpedImg = doWarp(mat, pts)
+                        imageView.setImageBitmap(warpedImg)
+                        infoText.text = "Do you want to save the unwarped image?"
+                        saveBtn.visibility = VISIBLE
+                        resetBtn.visibility = VISIBLE
+                    } else {
+                        infoText.text = "You have selected ${numPoints}/4 points"
+                    }
+                }
             }
         }
 
         imageView.setOnTouchListener { v, event ->
             onPointClick(event)
-            false
+            true
         }
 
         resetBtn.setOnClickListener {
             numPoints = 0
-            imageView.setImageBitmap(bm)
+            imageView.setImageBitmap(refImg)
             infoText.text = ""
             saveBtn.visibility = INVISIBLE
             resetBtn.visibility = INVISIBLE
@@ -175,7 +223,7 @@ class UnwarpActivity : AppCompatActivity() {
         return null
     }
 
-    fun fourPointTransform(image: Mat, rect: Array<DoubleArray>): Mat {
+    private fun fourPointTransform(image: Mat, rect: Array<DoubleArray>): Mat {
         assert(rect.size == 4)
         val (tl, tr, br, bl) = rect
 
@@ -200,7 +248,7 @@ class UnwarpActivity : AppCompatActivity() {
         return warped
     }
 
-    fun doubleArrayToMat(input: Array<DoubleArray>): Mat {
+    private fun doubleArrayToMat(input: Array<DoubleArray>): Mat {
         val rows = input.size
         val cols = input[0].size
         val outputMat = Mat(rows, cols, CvType.CV_32F)
@@ -214,7 +262,7 @@ class UnwarpActivity : AppCompatActivity() {
         return outputMat
     }
 
-    fun doWarp(image: Mat, pts: Array<DoubleArray>): Bitmap {
+    private fun doWarp(image: Mat, pts: Array<DoubleArray>): Bitmap {
         val warped = fourPointTransform(image, pts)
 
         val bitmap = Bitmap.createBitmap(warped.cols(), warped.rows(), Bitmap.Config.RGB_565)
@@ -222,4 +270,14 @@ class UnwarpActivity : AppCompatActivity() {
 
         return bitmap
     }
+
+    private fun getZoomedImage(originalImage: Bitmap, scale: Float): Bitmap {
+        return Bitmap.createScaledBitmap(
+            originalImage,
+            (originalImage.width * scale).toInt(),
+            (originalImage.height * scale).toInt(),
+            false
+        )
+    }
+
 }

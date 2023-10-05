@@ -43,9 +43,9 @@ class MainActivity : AppCompatActivity() {
         changeViewBtn.setOnClickListener {
             val intent = Intent(this, ARActivity::class.java)
             if (selectedRefImg is Int) {
-                intent.putExtra("reference_image", selectedRefImg as Int)
+                intent.putExtra("reference_image_int", selectedRefImg as Int)
             } else if (selectedRefImg is String) {
-                intent.putExtra("reference_image", selectedRefImg as String)
+                intent.putExtra("reference_image_str", selectedRefImg as String)
             }
             startActivity(intent)
         }

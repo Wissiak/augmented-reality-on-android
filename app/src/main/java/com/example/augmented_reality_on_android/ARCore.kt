@@ -358,14 +358,14 @@ class ARCore {
         val matches = MatOfDMatch()
         matcher.match(frame_descriptors, reference_descriptors, matches)
 
-        val dstPoints = matches.toArray().map { m: DMatch -> frame_keypoints_list[m.queryIdx].pt }
-        val srcPoints =
+        val dstPointArray = matches.toArray().map { m: DMatch -> frame_keypoints_list[m.queryIdx].pt }
+        val srcPointArray =
             matches.toArray().map { m: DMatch -> reference_keypoints_list[m.trainIdx].pt }
 
         val dstPtsCoords = MatOfPoint2f()
         val srcPtsCoords = MatOfPoint2f()
-        dstPtsCoords.fromList(dstPoints)
-        srcPtsCoords.fromList(srcPoints)
+        dstPtsCoords.fromList(dstPointArray)
+        srcPtsCoords.fromList(srcPointArray)
 
         // Find the homography matrix H using RANSAC
         val mask = Mat()

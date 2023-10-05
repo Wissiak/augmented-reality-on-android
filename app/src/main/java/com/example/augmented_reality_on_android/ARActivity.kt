@@ -50,8 +50,8 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         cameraView.visibility = SurfaceView.VISIBLE
 
         var reference_image = Mat()
-        val refImgResource = intent.getIntExtra("reference_image", -1)
-        val refImgFilename = intent.getStringExtra("reference_image")
+        val refImgResource = intent.getIntExtra("reference_image_int", -1)
+        val refImgFilename = intent.getStringExtra("reference_image_str")
         if (refImgResource != -1) {
             reference_image =
                 org.opencv.android.Utils.loadResource(
