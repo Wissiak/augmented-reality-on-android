@@ -74,7 +74,6 @@ class MainActivity : AppCompatActivity() {
     fun refreshButtons() {
         referenceImages.removeAllViews()
         addRefImg(R.drawable.book1_reference)
-        addRefImg(R.drawable.keyboard_reference)
         loadCustomRefImages()
         addRefImg(R.drawable.ic_add, true)
     }
