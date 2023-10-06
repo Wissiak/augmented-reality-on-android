@@ -1,11 +1,8 @@
 package com.example.augmented_reality_on_android
 
-import android.app.Activity
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.view.ContextMenu
 import android.view.ContextMenu.ContextMenuInfo
@@ -15,9 +12,10 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.flexbox.FlexboxLayout
+import com.vansuita.pickimage.bundle.PickSetup
+import com.vansuita.pickimage.dialog.PickImageDialog
 import org.opencv.android.OpenCVLoader
 import java.io.File
 
@@ -107,9 +105,13 @@ class MainActivity : AppCompatActivity() {
             val size = (120 * dpScale + 0.5f).toInt()
             button.layoutParams = LinearLayout.LayoutParams(size, size)
             button.setOnClickListener {
-                val pickImg =
-                    Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
-                changeImage.launch(pickImg)
+                PickImageDialog.build(PickSetup().setSystemDialog(true))
+                    .setOnPickResult {
+                        val intent = Intent(this, UnwarpActivity::class.java)
+                        intent.putExtra("image_uri", it.uri.toString())
+                        startActivity(intent)
+                    }
+                    .show(this)
             }
         }
         if (selectedRefImg == id) {
@@ -125,19 +127,4 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    private val changeImage =
-        registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) {
-            if (it.resultCode == Activity.RESULT_OK) {
-                val data = it.data
-                val imgUri: Uri? = data?.data
-
-                val intent = Intent(this, UnwarpActivity::class.java)
-                intent.putExtra("image_uri", imgUri.toString())
-                startActivity(intent)
-
-            }
-        }
 }

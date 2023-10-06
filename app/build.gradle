@@ -2,7 +2,6 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 }
-
 android {
     namespace 'com.example.augmented_reality_on_android'
     compileSdk 33
@@ -40,6 +39,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
     implementation("org.jetbrains.kotlinx:multik-core:0.2.2")
     implementation("org.jetbrains.kotlinx:multik-default:0.2.2")
+    implementation 'com.github.jrvansuita:PickImage:3.0.2'
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
 
     implementation project(path: ':openCV')
