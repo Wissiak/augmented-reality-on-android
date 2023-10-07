@@ -59,31 +59,34 @@ class RecoveryFromHomography(
 
 }
 
-//https://answers.opencv.org/question/5597/cvtype-meaning/
-class ARCore {
+class ARCore(
+    private var reference_image: Mat) {
     private var sift: SIFT
     private var matcher: BFMatcher
-    private var reference_image: Mat
     private lateinit var objectPoints: D2Array<Double>
     private lateinit var edges: D2Array<Int>
     private lateinit var edgeColors: Array<Scalar>
+    private var reference_keypoints_list: List<KeyPoint>
+    private var reference_descriptors: Mat
     private var Dx = 60.0
     private var Dy = 60.0
     private var Dz = 60.0
 
-    constructor(reference_image: Mat) {
-        this.reference_image = reference_image
+    init {
         sift = SIFT.create(3000)
         sift.contrastThreshold = 0.001
         sift.edgeThreshold = 20.0
         sift.sigma = 1.5
         sift.nOctaveLayers = 4
-
         matcher = BFMatcher.create(Core.NORM_L2, true)
-
         toggleFrame(true)
         setEdgeColors(Scalar(0.0, 0.0, 0.0))
         setObjPoints()
+
+        val reference_keypoints = MatOfKeyPoint()
+        reference_descriptors = Mat()
+        sift.detectAndCompute(reference_image, Mat(), reference_keypoints, reference_descriptors)
+        reference_keypoints_list = reference_keypoints.toList()
     }
 
     fun toggleFrame(showFrame: Boolean) {
@@ -343,24 +346,18 @@ class ARCore {
     }
 
     fun android_ar(video_frame: Mat): Mat {
-        val reference_keypoints = MatOfKeyPoint()
-        val reference_descriptors = Mat()
-        sift.detectAndCompute(reference_image, Mat(), reference_keypoints, reference_descriptors)
-
         // Detect and compute keypoints and descriptors for the video_frame
         val frame_keypoints = MatOfKeyPoint()
         val frame_descriptors = Mat()
         sift.detectAndCompute(video_frame, Mat(), frame_keypoints, frame_descriptors)
 
         val frame_keypoints_list = frame_keypoints.toList()
-        val reference_keypoints_list = reference_keypoints.toList()
 
         val matches = MatOfDMatch()
         matcher.match(frame_descriptors, reference_descriptors, matches)
 
         val dstPointArray = matches.toArray().map { m: DMatch -> frame_keypoints_list[m.queryIdx].pt }
-        val srcPointArray =
-            matches.toArray().map { m: DMatch -> reference_keypoints_list[m.trainIdx].pt }
+        val srcPointArray = matches.toArray().map { m: DMatch -> reference_keypoints_list[m.trainIdx].pt }
 
         val dstPtsCoords = MatOfPoint2f()
         val srcPtsCoords = MatOfPoint2f()
@@ -386,16 +383,7 @@ class ARCore {
             val dstPoints = MatOfPoint2f() // top left, bottom left, bottom right, top right
             perspectiveTransform(srcPoints, dstPoints, H)
 
-            val contours: MutableList<MatOfPoint> = ArrayList()
-            val doubleArray = DoubleArray(dstPoints.size(0) * dstPoints.size(1))
-            var i = 0
-            for (points2f in dstPoints.toList()) {
-                val points = MatOfPoint(Point(points2f.x, points2f.y))
-                doubleArray[i] = points2f.x
-                doubleArray[i+1] = points2f.y
-                contours.add(points)
-                i *= 2
-            }
+            val contours: List<MatOfPoint> = dstPoints.toList().map { points2f -> MatOfPoint(Point(points2f.x, points2f.y)) }
             Imgproc.polylines(video_frame, contours, true, Scalar(255.0, 255.0, 0.0), 10)
 
             val res = findPoseTransformationParams(video_frame.size(), Utils.matToD2Array(dstPoints, 4, 2), Utils.matToD2Array(srcPoints, 4, 2))
