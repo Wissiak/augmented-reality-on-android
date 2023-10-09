@@ -9,7 +9,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Size
 import kotlin.math.sqrt
@@ -25,7 +24,7 @@ class ARCoreUnitTest {
     @BeforeEach
     fun setUp() {
         System.loadLibrary("opencv_java480")
-        val reference_image = Mat(100, 100, CvType.CV_32FC2);
+        val reference_image = Mat()
         arCore = ARCore(reference_image)
 
         H_c_b = mk.ndarray(

@@ -18,7 +18,14 @@ import org.opencv.features2d.SIFT
 import org.opencv.imgproc.Imgproc
 import kotlin.math.*
 
-
+/**
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * The code base for feature detection, feature matching, homography
+ * decomposition and object projection has been provided as course material
+ * to the course "Image Processing and Computer Vision 2" taught at OST
+ * university.
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ */
 class Utils {
     companion object {
         fun cross(
@@ -66,8 +73,8 @@ class ARCore(
     private lateinit var objectPoints: D2Array<Double>
     private lateinit var edges: D2Array<Int>
     private lateinit var edgeColors: Array<Scalar>
-    private var reference_keypoints_list: List<KeyPoint>
-    private var reference_descriptors: Mat
+    private lateinit var reference_keypoints_list: List<KeyPoint>
+    private lateinit var reference_descriptors: Mat
     private var Dx = 60.0
     private var Dy = 60.0
     private var Dz = 60.0
@@ -83,10 +90,17 @@ class ARCore(
         setEdgeColors(Scalar(0.0, 0.0, 0.0))
         setObjPoints()
 
-        val reference_keypoints = MatOfKeyPoint()
-        reference_descriptors = Mat()
-        sift.detectAndCompute(reference_image, Mat(), reference_keypoints, reference_descriptors)
-        reference_keypoints_list = reference_keypoints.toList()
+        if (!reference_image.empty()) {
+            val reference_keypoints = MatOfKeyPoint()
+            reference_descriptors = Mat()
+            sift.detectAndCompute(
+                reference_image,
+                Mat(),
+                reference_keypoints,
+                reference_descriptors
+            )
+            reference_keypoints_list = reference_keypoints.toList()
+        }
     }
 
     fun toggleFrame(showFrame: Boolean) {
@@ -349,12 +363,21 @@ class ARCore(
         // Detect and compute keypoints and descriptors for the video_frame
         val frame_keypoints = MatOfKeyPoint()
         val frame_descriptors = Mat()
+
+        var start = System.nanoTime()
+
         sift.detectAndCompute(video_frame, Mat(), frame_keypoints, frame_descriptors)
+
+        Log.d("time", "Time for Feature Detection: ${(System.nanoTime() - start) / 1_000_000}ms")
+        start = System.nanoTime()
 
         val frame_keypoints_list = frame_keypoints.toList()
 
         val matches = MatOfDMatch()
         matcher.match(frame_descriptors, reference_descriptors, matches)
+
+        Log.d("time", "Time for Feature Matching: ${(System.nanoTime() - start) / 1_000_000}ms")
+        start = System.nanoTime()
 
         val dstPointArray = matches.toArray().map { m: DMatch -> frame_keypoints_list[m.queryIdx].pt }
         val srcPointArray = matches.toArray().map { m: DMatch -> reference_keypoints_list[m.trainIdx].pt }
@@ -368,8 +391,11 @@ class ARCore(
         val mask = Mat()
         val H = Calib3d.findHomography(srcPtsCoords, dstPtsCoords, Calib3d.RANSAC, 5.0, mask)
 
+        Log.d("time", "Time for Homography Calculation: ${(System.nanoTime() - start) / 1_000_000}ms")
+        start = System.nanoTime()
+
         val numInliers = Core.countNonZero(mask)
-        Log.i("ARCore", "numInliers: " + numInliers)
+        Log.d("ARCore", "Number of inliers: $numInliers")
         if (numInliers > 50) {
             val height = reference_image.size(0)
             val width = reference_image.size(1)
@@ -393,6 +419,7 @@ class ARCore(
                 Log.e("ARCore", "findPoseTransformationParams failed")
             }
         }
+        Log.d("time", "Time for Drawing: ${(System.nanoTime() - start) / 1_000_000}ms")
         return video_frame
     }
 }
