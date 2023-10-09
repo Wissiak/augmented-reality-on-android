@@ -14,6 +14,8 @@ import org.opencv.calib3d.Calib3d
 import org.opencv.core.*
 import org.opencv.core.Core.perspectiveTransform
 import org.opencv.features2d.BFMatcher
+import org.opencv.features2d.Feature2D
+import org.opencv.features2d.ORB
 import org.opencv.features2d.SIFT
 import org.opencv.imgproc.Imgproc
 import kotlin.math.*
@@ -42,6 +44,7 @@ class Utils {
 
             return crossProduct
         }
+
         fun matToD2Array(mat: Mat, rows: Int, cols: Int): D2Array<Double> {
             val d2Array = mk.zeros<Double>(rows, cols)
 
@@ -67,8 +70,11 @@ class RecoveryFromHomography(
 }
 
 class ARCore(
-    private var reference_image: Mat) {
+    private var reference_image: Mat
+) {
     private var sift: SIFT
+    private var orb: ORB
+    private var detector: Feature2D
     private var matcher: BFMatcher
     private lateinit var objectPoints: D2Array<Double>
     private lateinit var edges: D2Array<Int>
@@ -78,6 +84,7 @@ class ARCore(
     private var Dx = 60.0
     private var Dy = 60.0
     private var Dz = 60.0
+    private var useORB = false
 
     init {
         sift = SIFT.create(3000)
@@ -85,6 +92,9 @@ class ARCore(
         sift.edgeThreshold = 20.0
         sift.sigma = 1.5
         sift.nOctaveLayers = 4
+        orb = ORB.create(3000)
+        orb.edgeThreshold = 20
+        detector = sift
         matcher = BFMatcher.create(Core.NORM_L2, true)
         toggleFrame(true)
         setEdgeColors(Scalar(0.0, 0.0, 0.0))
@@ -101,6 +111,28 @@ class ARCore(
             )
             reference_keypoints_list = reference_keypoints.toList()
         }
+    }
+
+    fun toggleDetector(useORB: Boolean) {
+        val reference_keypoints = MatOfKeyPoint()
+        if (useORB) {
+            orb.detectAndCompute(
+                reference_image,
+                Mat(),
+                reference_keypoints,
+                reference_descriptors
+            )
+            detector = orb
+        } else {
+            sift.detectAndCompute(
+                reference_image,
+                Mat(),
+                reference_keypoints,
+                reference_descriptors
+            )
+            detector = sift
+        }
+        reference_keypoints_list = reference_keypoints.toList()
     }
 
     fun toggleFrame(showFrame: Boolean) {
@@ -130,7 +162,7 @@ class ARCore(
     }
 
     fun setEdgeColors(baseColor: Scalar) {
-        val arObjectColor =  Array(12) { index ->  baseColor }
+        val arObjectColor = Array(12) { index -> baseColor }
         edgeColors = arrayOf(
             *arObjectColor,
             Scalar(0.0, 0.0, 255.0, 255.0),
@@ -195,7 +227,7 @@ class ARCore(
         val fx = diags_sqrt[2, 2] / diags_sqrt[0, 0]
         val fy = diags_sqrt[2, 2] / diags_sqrt[1, 1]
 
-        if (R_c_b.any {it.isNaN()}) {
+        if (R_c_b.any { it.isNaN() }) {
             return null
         }
         return RecoveryFromHomography(R_c_b, t_c_cb, fx, fy)
@@ -366,7 +398,7 @@ class ARCore(
 
         var start = System.nanoTime()
 
-        sift.detectAndCompute(video_frame, Mat(), frame_keypoints, frame_descriptors)
+        detector.detectAndCompute(video_frame, Mat(), frame_keypoints, frame_descriptors)
 
         Log.d("time", "Time for Feature Detection: ${(System.nanoTime() - start) / 1_000_000}ms")
         start = System.nanoTime()
@@ -379,8 +411,10 @@ class ARCore(
         Log.d("time", "Time for Feature Matching: ${(System.nanoTime() - start) / 1_000_000}ms")
         start = System.nanoTime()
 
-        val dstPointArray = matches.toArray().map { m: DMatch -> frame_keypoints_list[m.queryIdx].pt }
-        val srcPointArray = matches.toArray().map { m: DMatch -> reference_keypoints_list[m.trainIdx].pt }
+        val dstPointArray =
+            matches.toArray().map { m: DMatch -> frame_keypoints_list[m.queryIdx].pt }
+        val srcPointArray =
+            matches.toArray().map { m: DMatch -> reference_keypoints_list[m.trainIdx].pt }
 
         val dstPtsCoords = MatOfPoint2f()
         val srcPtsCoords = MatOfPoint2f()
@@ -391,7 +425,10 @@ class ARCore(
         val mask = Mat()
         val H = Calib3d.findHomography(srcPtsCoords, dstPtsCoords, Calib3d.RANSAC, 5.0, mask)
 
-        Log.d("time", "Time for Homography Calculation: ${(System.nanoTime() - start) / 1_000_000}ms")
+        Log.d(
+            "time",
+            "Time for Homography Calculation: ${(System.nanoTime() - start) / 1_000_000}ms"
+        )
         start = System.nanoTime()
 
         val numInliers = Core.countNonZero(mask)
@@ -409,10 +446,15 @@ class ARCore(
             val dstPoints = MatOfPoint2f() // top left, bottom left, bottom right, top right
             perspectiveTransform(srcPoints, dstPoints, H)
 
-            val contours: List<MatOfPoint> = dstPoints.toList().map { points2f -> MatOfPoint(Point(points2f.x, points2f.y)) }
+            val contours: List<MatOfPoint> =
+                dstPoints.toList().map { points2f -> MatOfPoint(Point(points2f.x, points2f.y)) }
             Imgproc.polylines(video_frame, contours, true, Scalar(255.0, 255.0, 0.0), 10)
 
-            val res = findPoseTransformationParams(video_frame.size(), Utils.matToD2Array(dstPoints, 4, 2), Utils.matToD2Array(srcPoints, 4, 2))
+            val res = findPoseTransformationParams(
+                video_frame.size(),
+                Utils.matToD2Array(dstPoints, 4, 2),
+                Utils.matToD2Array(srcPoints, 4, 2)
+            )
             if (res != null) {
                 drawARObject(video_frame, res)
             } else {

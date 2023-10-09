@@ -115,6 +115,12 @@ class ARActivity : CameraActivity(), CameraBridgeViewBase.CvCameraViewListener2 
         frameToggle.setOnCheckedChangeListener { _, isChecked ->
             arCore.toggleFrame(isChecked)
         }
+        val detectorToggle: SwitchMaterial = findViewById(R.id.toggle_detector)
+        detectorToggle.setOnCheckedChangeListener { _, isChecked ->
+            cameraView.disableView() // Avoid errors inbetween changing the feature detector
+            arCore.toggleDetector(isChecked)
+            cameraView.enableView()
+        }
         val menuButton: ImageButton = findViewById(R.id.expand_button)
         menuButton.setOnClickListener {
             if (menuHidden) {
