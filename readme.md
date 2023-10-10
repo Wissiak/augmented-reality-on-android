@@ -8,6 +8,11 @@ The goal of this project was not to improve performance but rather to show the f
 
 ## Showcase
 
+
+https://github.com/Wissiak/augmented-reality-on-android/assets/31206249/c7113700-9fc7-4361-a9e4-379cadd26b5b
+
+
+
 ## Features
 ### AR Projection
 The main feature of (AR)droid is to project a cube onto a reference plane which has been previously selected on the main screen.
