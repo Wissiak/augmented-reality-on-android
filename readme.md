@@ -7,7 +7,6 @@ The mobile version has been rewritten to Kotlin and has been enhanced with some 
 The goal of this project was not to improve performance but rather to show the feasibility of a simple AR project on mobile devices.
 
 ## Showcase
-https://github.com/Wissiak/augmented-reality-on-android/assets/31206249/365d4809-3b32-41a6-b266-8153bf3294b8
 
 ## Features
 ### AR Projection
@@ -19,7 +18,7 @@ The main feature of (AR)droid is to project a cube onto a reference plane which 
 - In the bottom right, the camera view can be paused and resumed.
 
 
-![Projection Screen](https://github.com/Wissiak/augmented-reality-on-android/assets/31206249/b24ddec1-72e2-4f3c-b62f-f8ee91dff35f)
+![Projection Screen](assets/projection-screen.png)
 
 
 ### Unwarping images
@@ -38,7 +37,7 @@ Note that is also possible to start with any other point which will then be the 
 If the points are selected arbitrarily, undesired results can happen in the warping process but you can restart the selecting process by pressing "Reset".
 If the unwarped result is satisfactory, the image can be saved - it is persistent upon app restart.
 
-![Unwarping Images](https://github.com/Wissiak/augmented-reality-on-android/assets/31206249/e9241a7b-84b4-48de-8a3b-54cc354a16fb)
+![Unwarping Images](assets/unwarping-screen.png)
 
 
 
@@ -48,7 +47,7 @@ To select an image, just tap on it. To delete a reference image, you can long pr
 Upon clicking the '+', a new reference image can be registered.
 
 
-![Main Screen](https://github.com/Wissiak/augmented-reality-on-android/assets/31206249/d6454a3f-0219-4241-845a-fe46c0376858)
+![Main Screen](assets/main-screen.png)
 
 
 ## Project Setup
@@ -69,7 +68,7 @@ Afterwards you should be able to add it normally.
 
 ---
 6. Click on `Import Module` and specify the unpacked folder with "/sdk" appended (e.g. ~/tools/OpenCV-android-sdk/sdk)
-![Import Module](./opencv-installation.png)
+![Import Module](assets/opencv-installation.png)
 
 ---
 Remember to uncomment the line in `app/build.gralde` if you commented it out before:
