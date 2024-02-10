@@ -6,7 +6,6 @@ The Computer Vision algorithms have been taken from [Augmented Reality on Webcam
 The mobile version has been rewritten to Kotlin and has been enhanced with some mobile functionalities. 
 The goal of this project was not to improve performance but rather to show the feasibility of a simple AR project on mobile devices. Please also check out [Augmented Reality with 3D Rendering using Metal Shaders and OpenCV](https://github.com/Wissiak/augmented-reality-with-3d-rendering-using-metal-shaders-and-opencv) for a C++ version. 
 
-Miniproject features: Kotlin (3P), Functionality (2P), Sensor (1P), libraries (1P)
 
 ## Showcase
 
